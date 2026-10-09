@@ -24,5 +24,9 @@ nav:
   - Monitoring (cron, Prometheus, CI): monitoring.md
   - Command reference: reference.md
   - FAQ: faq.md
+  - Blog:
+    - All posts: blog/index.md
+    - "Your cert renewed. Did every node get it?": blog/every-node-same-cert.md
+    - "证书续期了，每台节点都换上了吗？": blog/every-node-same-cert-zh.md
   - Home page ↗: https://blackman99.github.io/certfan/
 markdown_extensions: [admonition, attr_list, tables, {toc: {permalink: true}}, pymdownx.highlight, pymdownx.superfences]

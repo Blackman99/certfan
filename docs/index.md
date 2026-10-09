@@ -23,3 +23,6 @@ certfan check example.com
 ```
 
 Zero dependencies, Python 3.9+, Linux/macOS/Windows.
+
+**Blog:** [Your cert renewed. Did every node get it?](blog/every-node-same-cert.md) ·
+[证书续期了，每台节点都换上了吗？](blog/every-node-same-cert-zh.md)
