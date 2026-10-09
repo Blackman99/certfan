@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>certfan · your cert renewed. did every node get it?</title>
+<meta name="description" content="certfan probes every IP behind a TLS hostname and catches the load-balancer node still serving an old, expiring or broken certificate. Zero-dependency CLI.">
+<link rel="canonical" href="https://blackman99.github.io/certfan/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="logo-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="logo-512.png">
+<meta name="theme-color" content="#d9c49b">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="certfan">
+<meta property="og:title" content="certfan: your cert renewed. Did every node get it?">
+<meta property="og:description" content="Probe every IP behind a TLS hostname and catch the node still serving the old certificate. One command, zero dependencies.">
+<meta property="og:url" content="https://blackman99.github.io/certfan/">
+<meta property="og:image" content="https://blackman99.github.io/certfan/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="certfan: brass keys on a locksmith's pegboard, one tagged WRONG CUT">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="certfan: your cert renewed. Did every node get it?">
+<meta name="twitter:description" content="Probe every IP behind a TLS hostname and catch the node still serving the old certificate.">
+<meta name="twitter:image" content="https://blackman99.github.io/certfan/og-image.png">
+<meta name="twitter:image:alt" content="certfan: brass keys on a locksmith's pegboard, one tagged WRONG CUT">
+<link rel="preload" href="fonts/alfa-slab.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/archivo-narrow.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="sign">
+  <img src="favicon.svg" width="56" height="56" alt="">
+  <h1>certfan</h1>
+  <p class="sub">Your certificate renewed. <em>Did every node get it?</em></p>
+  <nav><a href="docs/">Docs</a><a href="https://github.com/Blackman99/certfan">GitHub</a></nav>
+</header>
+
+<main>
+<section class="board" aria-label="Animated demo: four nodes compared">
+  <div class="rail" id="rail" data-host="shop.example.com"></div>
+  <div class="gauge" id="gauge" aria-hidden="true"><span>DEPTH GAUGE · SHA-256</span></div>
+  <div class="board-foot">
+    <p id="verdict" class="verdict" aria-live="polite">shop.example.com · 4 addresses</p>
+    <button id="again" type="button">Cut again</button>
+  </div>
+</section>
+
+<section class="slip" aria-labelledby="wo">
+  <h2 id="wo">Work order №&nbsp;0347</h2>
+  <dl>
+    <dt>03:00</dt><dd>ACME renews <b>shop.example.com</b>. Deploy hook reloads nginx.</dd>
+    <dt>03:01</dt><dd>Uptime check resolves one IP, sees the new cert. <b>Green.</b></dd>
+    <dt>…</dt><dd>Node 3 was draining during the hook and never reloaded. It keeps serving last month's cert.</dd>
+    <dt>day 47</dt><dd>One in four requests fails with <i>certificate has expired</i>. Nobody's dashboard is red.</dd>
+  </dl>
+  <p class="note">With 47-day certificates (and Let's Encrypt's 6-day ones) this isn't a yearly accident any more. It's a weekly chance.</p>
+</section>
+
+<section class="ledger" aria-labelledby="how">
+  <h2 id="how">How the copy is checked</h2>
+  <ol>
+    <li><span class="n">1</span><div><b>Every hook.</b> Resolve all A and AAAA records, or pass backends yourself with <code>--connect 10.0.0.7:443</code>.</div></li>
+    <li><span class="n">2</span><div><b>Every key.</b> A TLS handshake per address with the right SNI, chain and hostname verified, served certificate kept.</div></li>
+    <li><span class="n">3</span><div><b>One gauge.</b> Compare fingerprints across nodes, flag the odd one out, and warn when a cert is down to its last days or last third of its lifetime.</div></li>
+    <li><span class="n">4</span><div><b>A receipt.</b> Exit code 0 / 1 / 2, JSON, or Prometheus textfile metrics for node_exporter.</div></li>
+  </ol>
+</section>
+
+<section class="counter" aria-labelledby="rc">
+  <h2 id="rc" class="vh">Sample output</h2>
+  <div class="receipt" id="receipt">
+    <p class="rh">CERTFAN 0.1.0 · KEY CHECK</p>
+    <p>$ certfan check shop.example.com</p>
+    <p>shop.example.com · 4 addr · 2 distinct</p>
+    <p><span class="ok">PASS</span> 203.0.113.10 · cert A · exp 2026-11-20</p>
+    <p><span class="ok">PASS</span> 203.0.113.11 · cert A · exp 2026-11-20</p>
+    <p><span class="bad">FAIL</span> 203.0.113.12 · cert B · exp 2026-10-12</p>
+    <p class="ind">↳ serves a different certificate than the other nodes</p>
+    <p><span class="ok">PASS</span> 2001:db8::10 · cert A · exp 2026-11-20</p>
+    <p class="rv">VERDICT: FAIL · exit 2</p>
+    <p class="rf">thank you · keep your copies matched</p>
+  </div>
+  <div class="tag install">
+    <span class="hole" aria-hidden="true"></span>
+    <h2>Take one</h2>
+    <p>Python 3.9+, no dependencies.</p>
+    <pre id="cmd">pipx install "git+https://github.com/Blackman99/certfan@v0.1.0"</pre>
+    <button type="button" id="copy">Copy</button>
+    <p class="try">then <code>certfan demo</code> runs three local nodes, offline.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <p>certfan is MIT-licensed · <a href="https://github.com/Blackman99/certfan">source</a> · <a href="docs/">docs</a> · <a href="https://github.com/Blackman99/certfan/blob/main/ROADMAP.md">roadmap</a></p>
+</footer>
+<script src="app.js" defer></script>
+</body>
+</html>

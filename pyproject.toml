@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "certfan"
+version = "0.1.0"
+description = "Probe every IP behind a TLS hostname and catch the node still serving an old, expiring or broken certificate."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Blackman99" }]
+keywords = ["tls", "ssl", "certificate", "x509", "acme", "letsencrypt", "monitoring", "load-balancer", "prometheus", "devops", "expiry"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Monitoring",
+  "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://blackman99.github.io/certfan/"
+Documentation = "https://blackman99.github.io/certfan/docs/"
+Source = "https://github.com/Blackman99/certfan"
+Issues = "https://github.com/Blackman99/certfan/issues"
+
+[project.scripts]
+certfan = "certfan.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/certfan"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"

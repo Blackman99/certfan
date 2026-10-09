@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../site/style.css">
+<style>
+html,body{width:100vw;height:100vh;overflow:hidden;margin:0}
+.wrap{height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 40px 0}
+h1{font-size:118px;line-height:1;text-shadow:3px 3px 0 var(--brass-hi)}
+.s{font-size:34px;margin:6px 0 10px}
+.s em{font-style:normal;background:var(--tag);padding:0 .3em;border:2px solid var(--ink)}
+.board{width:100%;flex:1;margin:0;border-bottom:0}
+.rail{min-height:0}
+.key{opacity:1!important;animation:none!important}
+.key svg{width:70px}
+.ktag{font-size:17px}.ktag b{font-size:19px}
+.url{position:absolute;bottom:14px;right:44px;font-weight:700;font-size:20px;background:var(--paper);border:2px solid var(--ink);padding:2px 10px}
+</style></head><body>
+<div class="wrap"><h1>certfan</h1><p class="s">Your certificate renewed. <em>Did every node get it?</em></p>
+<section class="board"><div class="rail" id="rail"></div></section></div>
+<div class="url">blackman99.github.io/certfan</div>
+<script>
+const NS=0;function keySVG(fp){let d="M34 66 L34 250 L44 258 L46 250";for(let i=0;i<6;i++){const depth=4+(parseInt(fp[i],16)%4)*5;const y=236-i*26;d+=` L${64-depth} ${y} L64 ${y-9} L64 ${y-16}`}d+=" L46 92 L46 66 Z";
+return `<svg viewBox="0 0 80 262"><circle cx="40" cy="38" r="34" fill="#b8862b" stroke="#2b2116" stroke-width="4"/><circle cx="40" cy="16" r="7" fill="#d9c49b" stroke="#2b2116" stroke-width="3"/><rect x="22" y="44" width="36" height="8" rx="3" fill="#dcae4f" stroke="#2b2116" stroke-width="2"/><path class="cuts" d="${d}" fill="#b8862b" stroke="#2b2116" stroke-width="4" stroke-linejoin="round"/></svg>`}
+const n=[["203.0.113.10","51fe6357",0],["203.0.113.11","51fe6357",0],["203.0.113.12","e2a91c04",1],["2001:db8::10","51fe6357",0]];
+document.getElementById("rail").innerHTML=n.map(([ip,fp,b])=>`<div class="key${b?' wrong':''}"><div class="hook"></div>${keySVG(fp)}<div class="ktag" style="animation:none"><b>${ip}</b>cert ${b?'B · exp 2026-10-12':'A · exp 2026-11-20'}<br><span class="st">${b?'WRONG CUT':'MATCH'}</span></div></div>`).join("");
+</script></body></html>

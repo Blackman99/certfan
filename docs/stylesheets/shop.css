@@ -1,0 +1,9 @@
+@font-face{font-family:"Alfa Slab One";src:url(alfa-slab.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"Archivo Narrow";src:url(archivo-narrow.woff2) format("woff2");font-weight:400 700;font-display:swap}
+:root{--md-primary-fg-color:#2b2116;--md-primary-bg-color:#f3e6c4;--md-accent-fg-color:#c23a22;--md-default-bg-color:#fbf6ea;
+ --md-default-fg-color:#2b2116;--md-typeset-a-color:#8a5a12;--md-text-font:"Archivo Narrow";--md-code-font:"Archivo Narrow";--md-code-bg-color:#f3e6c4}
+body{font-family:"Archivo Narrow","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums}
+.md-typeset{font-size:.9rem}
+.md-typeset h1,.md-typeset h2,.md-header__title{font-family:"Alfa Slab One",Rockwell,serif;font-weight:400;color:#2b2116}
+.md-header{background:#2b2116;border-bottom:4px solid #b8862b}
+.md-typeset code{font-weight:700}
