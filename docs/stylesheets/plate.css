@@ -1,0 +1,34 @@
+/* certfan docs: same identity as the landing page (site/DESIGN.md). Flat, near-black, hairlines. */
+@font-face{font-family:"Anybody";src:url(fonts/anybody-wdth.woff2) format("woff2");font-weight:100 900;font-stretch:50% 150%;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url(fonts/atkinson-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url(fonts/atkinson-700.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible Mono";src:url(fonts/atkinson-mono-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible Mono";src:url(fonts/atkinson-mono-500.woff2) format("woff2");font-weight:500;font-display:swap}
+[data-md-color-scheme="slate"]{
+  --md-hue:240;
+  --md-default-bg-color:#0b0b0c;--md-default-fg-color:#e6e4dd;
+  --md-default-fg-color--light:rgba(230,228,221,.72);--md-default-fg-color--lighter:#6b6b70;--md-default-fg-color--lightest:#2a2a2d;
+  --md-primary-fg-color:#0b0b0c;--md-primary-bg-color:#e6e4dd;--md-primary-bg-color--light:rgba(230,228,221,.72);
+  --md-accent-fg-color:#d6ff3b;--md-typeset-a-color:#d6ff3b;
+  --md-code-bg-color:#141416;--md-code-fg-color:#e6e4dd;
+  --md-footer-bg-color:#0b0b0c;--md-footer-bg-color--dark:#0b0b0c;
+  --md-text-font:"Atkinson Hyperlegible";--md-code-font:"Atkinson Hyperlegible Mono";
+  --md-admonition-bg-color:#0b0b0c;
+  --md-code-hl-number-color:#e6e4dd;--md-code-hl-string-color:#d6ff3b;--md-code-hl-comment-color:#8c8b87;--md-code-hl-keyword-color:#e6e4dd;
+  --md-code-hl-function-color:#e6e4dd;--md-code-hl-constant-color:#e6e4dd;--md-code-hl-special-color:#ff2e6a;--md-code-hl-name-color:#e6e4dd;--md-code-hl-operator-color:#e6e4dd;--md-code-hl-punctuation-color:#e6e4dd;--md-code-hl-variable-color:#e6e4dd;--md-code-hl-generic-color:#e6e4dd;
+}
+body{font-family:"Atkinson Hyperlegible",system-ui,sans-serif}
+.md-header{border-bottom:1px solid #6b6b70;box-shadow:none}
+.md-tabs{background:#0b0b0c}
+.md-header__title,.md-typeset h1,.md-typeset h2{font-family:"Anybody",sans-serif;font-stretch:78%;font-weight:700;color:#e6e4dd;letter-spacing:0}
+.md-typeset h1{font-weight:720;font-size:2.4em}
+.md-typeset h2{border-top:1px solid #6b6b70;padding-top:.8em}
+.md-typeset h3{font-weight:700}
+.md-typeset code,.md-typeset pre{font-family:"Atkinson Hyperlegible Mono",ui-monospace,monospace}
+.md-typeset pre>code{border-left:1px solid #d6ff3b;border-radius:0}
+.md-typeset .admonition,.md-typeset details{border-radius:0;box-shadow:none;border-width:0 0 0 1px}
+.md-typeset table:not([class]){border-radius:0;border:0;box-shadow:none}
+.md-typeset table:not([class]) th{border-bottom:1px solid #6b6b70;background:none}
+.md-typeset a:hover{color:#ff2e6a}
+.md-search__form{border-radius:0}
+.md-footer{border-top:1px solid #6b6b70}

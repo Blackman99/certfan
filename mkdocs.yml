@@ -12,11 +12,11 @@ theme:
   logo: assets/logo.svg
   font: false
   palette:
-    scheme: default
+    scheme: slate
     primary: custom
     accent: custom
   features: [navigation.instant, navigation.top, content.code.copy, search.highlight, toc.follow]
-extra_css: [stylesheets/shop.css]
+extra_css: [stylesheets/plate.css]
 nav:
   - Overview: index.md
   - Install: install.md

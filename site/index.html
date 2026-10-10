@@ -9,7 +9,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="logo-512.png" type="image/png" sizes="512x512">
 <link rel="apple-touch-icon" href="logo-512.png">
-<meta name="theme-color" content="#d9c49b">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="certfan">
 <meta property="og:title" content="certfan: your cert renewed. Did every node get it?">
@@ -19,82 +20,102 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="certfan: brass keys on a locksmith's pegboard, one tagged WRONG CUT">
+<meta property="og:image:alt" content="certfan: a hostname fans out to four addresses; three grow identical fingerprint glyphs in lime, one grows a different glyph in pink and slips out of line">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="certfan: your cert renewed. Did every node get it?">
 <meta name="twitter:description" content="Probe every IP behind a TLS hostname and catch the node still serving the old certificate.">
 <meta name="twitter:image" content="https://blackman99.github.io/certfan/og-image.png">
-<meta name="twitter:image:alt" content="certfan: brass keys on a locksmith's pegboard, one tagged WRONG CUT">
-<link rel="preload" href="fonts/alfa-slab.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/archivo-narrow.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="twitter:image:alt" content="certfan fingerprint fan chart: one node out of line">
+<link rel="preload" href="fonts/anybody-wdth.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/atkinson-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="sign">
-  <img src="favicon.svg" width="56" height="56" alt="">
-  <h1>certfan</h1>
-  <p class="sub">Your certificate renewed. <em>Did every node get it?</em></p>
+<header class="top g">
+  <a class="brand" href="./" aria-label="certfan home">
+    <svg class="mark" aria-hidden="true" viewBox="0 0 512 512" width="28" height="28"><rect width="512" height="512" fill="#0b0b0c"/><g fill="none" stroke-width="26" stroke-linecap="square"><path d="M118 330L272.9 38.6" stroke="#e6e4dd"/><path d="M118 330L370.8 117.9" stroke="#e6e4dd"/><path d="M118 330L431.8 228.0" stroke="#e6e4dd"/><path d="M118 330L229.9 337.8" stroke="#ff2e6a"/><path d="M280.2 375.4L444.8 386.9" stroke="#ff2e6a"/><path d="M118 330L414.6 474.7" stroke="#e6e4dd"/></g><rect x="88" y="300" width="60" height="60" fill="#e6e4dd"/></svg>
+    <span>certfan</span>
+  </a>
+  <p class="meta">Plate&nbsp;1 · TLS fingerprint survey · v0.1.0</p>
   <nav><a href="docs/">Docs</a><a href="https://github.com/Blackman99/certfan">GitHub</a></nav>
 </header>
 
 <main>
-<section class="board" aria-label="Animated demo: four nodes compared">
-  <div class="rail" id="rail" data-host="shop.example.com"></div>
-  <div class="gauge" id="gauge" aria-hidden="true"><span>DEPTH GAUGE · SHA-256</span></div>
-  <div class="board-foot">
-    <p id="verdict" class="verdict" aria-live="polite">shop.example.com · 4 addresses</p>
-    <button id="again" type="button">Cut again</button>
+<section class="lead g" aria-labelledby="h">
+  <h1 id="h"><span class="l1">Your cert renewed.</span> <span class="l2">Did <span id="every" class="every">every</span> node get&nbsp;it?</span></h1>
+  <p class="meta2 mono">certfan · a zero-dependency CLI<br>for every address behind a TLS name</p>
+</section>
+
+<figure class="plate g" id="fig1" aria-labelledby="f1c">
+  <figcaption id="f1c" class="cap">
+    <p class="fn"><span>Fig.</span>&nbsp;1</p>
+    <p class="dek">certfan resolves <b>every</b> A/AAAA address behind a hostname, handshakes each one with the right SNI, and fails when they don’t all serve the same valid, not-nearly-expired certificate.</p>
+    <p><b id="host">shop.example.com</b> resolves to <span id="count">4</span> addresses. Each ray ends in a glyph drawn from the SHA-256 of the certificate that address served: 32 spokes, one per byte, length = byte value.</p>
+    <p>Same certificate, same glyph. <span class="k ok">lime</span> = consistent; <span class="k bad">pink</span> = the odd one out.</p>
+    <p id="verdict" class="verdict" aria-live="polite">resolving…</p>
+    <button id="again" type="button">Re-resolve ↻</button>
+  </figcaption>
+  <div class="plot" id="fan" role="img" aria-label="Fan chart: the hostname fans out to each resolved address; one address serves a different certificate and its ray breaks out of line."></div>
+  <ol class="legend mono" id="legend" aria-label="Addresses and fingerprints"></ol>
+</figure>
+
+<section class="plate g" aria-labelledby="f2c">
+  <div class="cap">
+    <p class="fn"><span>Fig.</span>&nbsp;2</p>
+    <h2 id="f2c">What gets checked</h2>
+    <p>A typical uptime probe resolves the name once, hits one address, and reports green. With 47-day certificates (and Let’s Encrypt’s 6-day ones) a node that missed the reload is a weekly chance, not a yearly accident.</p>
+  </div>
+  <div class="plot">
+    <table class="matrix">
+      <thead><tr><th scope="col">check</th><th scope="col">one-IP probe</th><th scope="col">certfan</th><th scope="col" class="how">how</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Every A and AAAA address</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">resolved by default, or pass backends with <code>--connect 10.0.0.7:443</code></td></tr>
+        <tr><th scope="row">TLS handshake per address, right SNI</th><td><i class="m part" role="img" aria-label="one address only"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">chain and hostname verified, served certificate kept</td></tr>
+        <tr><th scope="row">Fingerprints compared across nodes</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">the odd one out fails, named by address</td></tr>
+        <tr><th scope="row">Expiry warning</th><td><i class="m part" role="img" aria-label="for the address it saw"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">last days, or last third of the certificate’s lifetime, on every node</td></tr>
+        <tr><th scope="row">Machine-readable result</th><td><i class="m part" role="img" aria-label="varies"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">exit 0 / 1 / 2, <code>--format json</code>, <code>--format prom</code>, <code>--prom-file</code></td></tr>
+      </tbody>
+    </table>
+    <p class="key mono" aria-hidden="true"><i class="m yes"></i> yes <i class="m part"></i> partly <i class="m no"></i> no</p>
   </div>
 </section>
 
-<section class="slip" aria-labelledby="wo">
-  <h2 id="wo">Work order №&nbsp;0347</h2>
-  <dl>
-    <dt>03:00</dt><dd>ACME renews <b>shop.example.com</b>. Deploy hook reloads nginx.</dd>
-    <dt>03:01</dt><dd>Uptime check resolves one IP, sees the new cert. <b>Green.</b></dd>
-    <dt>…</dt><dd>Node 3 was draining during the hook and never reloaded. It keeps serving last month's cert.</dd>
-    <dt>day 47</dt><dd>One in four requests fails with <i>certificate has expired</i>. Nobody's dashboard is red.</dd>
-  </dl>
-  <p class="note">With 47-day certificates (and Let's Encrypt's 6-day ones) this isn't a yearly accident any more. It's a weekly chance.</p>
-</section>
+<figure class="plate g" aria-labelledby="f3c">
+  <figcaption class="cap" id="f3c">
+    <p class="fn"><span>Fig.</span>&nbsp;3</p>
+    <p><b>Certificate served per node, days 0–50.</b> ACME renews on day 3 and the deploy hook reloads nginx. Node&nbsp;.12 was draining and never reloaded: it keeps the old certificate until it expires on day 47 and one request in four fails.</p>
+    <p>The one-IP probe (ticks on .10) stays green throughout. certfan’s daily run (ticks across all lanes) flags .12 from day 3.</p>
+  </figcaption>
+  <div class="plot" id="lanes" role="img" aria-label="Lane chart: three nodes switch to the new certificate on day 3, node .12 keeps the old one and breaks at day 47; certfan flags it from day 3."></div>
+</figure>
 
-<section class="ledger" aria-labelledby="how">
-  <h2 id="how">How the copy is checked</h2>
-  <ol>
-    <li><span class="n">1</span><div><b>Every hook.</b> Resolve all A and AAAA records, or pass backends yourself with <code>--connect 10.0.0.7:443</code>.</div></li>
-    <li><span class="n">2</span><div><b>Every key.</b> A TLS handshake per address with the right SNI, chain and hostname verified, served certificate kept.</div></li>
-    <li><span class="n">3</span><div><b>One gauge.</b> Compare fingerprints across nodes, flag the odd one out, and warn when a cert is down to its last days or last third of its lifetime.</div></li>
-    <li><span class="n">4</span><div><b>A receipt.</b> Exit code 0 / 1 / 2, JSON, or Prometheus textfile metrics for node_exporter.</div></li>
-  </ol>
-</section>
-
-<section class="counter" aria-labelledby="rc">
-  <h2 id="rc" class="vh">Sample output</h2>
-  <div class="receipt" id="receipt">
-    <p class="rh">CERTFAN 0.1.0 · KEY CHECK</p>
-    <p>$ certfan check shop.example.com</p>
-    <p>shop.example.com · 4 addr · 2 distinct</p>
-    <p><span class="ok">PASS</span> 203.0.113.10 · cert A · exp 2026-11-20</p>
-    <p><span class="ok">PASS</span> 203.0.113.11 · cert A · exp 2026-11-20</p>
-    <p><span class="bad">FAIL</span> 203.0.113.12 · cert B · exp 2026-10-12</p>
-    <p class="ind">↳ serves a different certificate than the other nodes</p>
-    <p><span class="ok">PASS</span> 2001:db8::10 · cert A · exp 2026-11-20</p>
-    <p class="rv">VERDICT: FAIL · exit 2</p>
-    <p class="rf">thank you · keep your copies matched</p>
+<section class="plate g" aria-labelledby="t1c">
+  <div class="cap">
+    <p class="fn"><span>Table</span>&nbsp;1</p>
+    <h2 id="t1c">One command</h2>
+    <p>Python 3.9+, no dependencies. Exit codes drop straight into cron, CI or a Kubernetes CronJob.</p>
   </div>
-  <div class="tag install">
-    <span class="hole" aria-hidden="true"></span>
-    <h2>Take one</h2>
-    <p>Python 3.9+, no dependencies.</p>
-    <pre id="cmd">pipx install "git+https://github.com/Blackman99/certfan@v0.1.0"</pre>
-    <button type="button" id="copy">Copy</button>
-    <p class="try">then <code>certfan demo</code> runs three local nodes, offline.</p>
+  <div class="plot">
+<pre class="out mono" aria-label="Sample output"><span class="dim">$</span> certfan check shop.example.com
+shop.example.com  4 address(es), 2 distinct certificate(s)
+  <span class="ok">PASS</span>  203.0.113.10   cert A  expires 2026-11-20  TLSv1.3  41ms
+  <span class="ok">PASS</span>  203.0.113.11   cert A  expires 2026-11-20  TLSv1.3  38ms
+  <span class="bad">FAIL</span>  203.0.113.12   cert B  expires 2026-10-12  TLSv1.3  44ms
+    - 203.0.113.12: serves a different certificate than the other nodes
+  <span class="ok">PASS</span>  2001:db8::10   cert A  expires 2026-11-20  TLSv1.3  40ms
+  verdict: <span class="bad">FAIL</span>   <span class="dim">exit 2</span></pre>
+    <div class="install">
+      <p class="lbl">install</p>
+      <div class="cmd"><code id="cmd" class="mono">pipx install "git+https://github.com/Blackman99/certfan@v0.1.0"</code><button type="button" id="copy">Copy</button></div>
+      <p class="try">then <code class="mono">certfan demo</code> starts three local nodes, one serving a different cert. Offline.</p>
+    </div>
   </div>
 </section>
 </main>
 
-<footer>
-  <p>certfan is MIT-licensed · <a href="https://github.com/Blackman99/certfan">source</a> · <a href="docs/">docs</a> · <a href="https://github.com/Blackman99/certfan/blob/main/ROADMAP.md">roadmap</a></p>
+<footer class="g">
+  <p>certfan · MIT · <a href="https://github.com/Blackman99/certfan">source</a> · <a href="docs/">docs</a> · <a href="https://github.com/Blackman99/certfan/blob/main/ROADMAP.md">roadmap</a></p>
+  <p class="colo">Figures are generated in your browser from sample SHA-256 fingerprints.</p>
 </footer>
 <script src="app.js" defer></script>
 </body>

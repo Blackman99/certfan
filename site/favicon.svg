@@ -1,11 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="certfan">
-  <rect width="128" height="128" rx="24" fill="#d9c49b"/>
-  <g fill="#7a5a2a" opacity=".35"><circle cx="20" cy="20" r="3"/><circle cx="108" cy="20" r="3"/><circle cx="20" cy="108" r="3"/><circle cx="108" cy="108" r="3"/></g>
-  <g transform="rotate(-35 64 64)">
-    <path d="M64 14a22 22 0 1 0 0.01 0z" fill="#b8862b" stroke="#2b2116" stroke-width="4"/>
-    <circle cx="64" cy="27" r="4.5" fill="#d9c49b" stroke="#2b2116" stroke-width="2.5"/>
-    <circle cx="54" cy="42" r="4.5" fill="#d9c49b" stroke="#2b2116" stroke-width="2.5"/>
-    <circle cx="74" cy="42" r="4.5" fill="#c23a22" stroke="#2b2116" stroke-width="2.5"/>
-    <path d="M58 57h12v26h10v8h-10v6h8v8h-8v13h-12z" fill="#b8862b" stroke="#2b2116" stroke-width="4" stroke-linejoin="round"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="64" height="64"><rect width="512" height="512" fill="#0b0b0c"/><g fill="none" stroke-width="30" stroke-linecap="square"><path d="M118 330L272.9 38.6" stroke="#e6e4dd"/><path d="M118 330L370.8 117.9" stroke="#e6e4dd"/><path d="M118 330L431.8 228.0" stroke="#e6e4dd"/><path d="M118 330L229.9 337.8" stroke="#ff2e6a"/><path d="M280.2 375.4L444.8 386.9" stroke="#ff2e6a"/><path d="M118 330L414.6 474.7" stroke="#e6e4dd"/></g><rect x="84" y="296" width="68" height="68" fill="#e6e4dd"/></svg>

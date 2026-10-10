@@ -1,44 +1,93 @@
 # certfan landing page: design notes
 
-## Reference object
-A **locksmith's key-duplication board**: the perforated hardboard wall behind the counter of a key-cutting
-shop, with brass blanks hanging on hooks, manila key tags tied on with red string, and a steel depth gauge the
-locksmith lays across the teeth to check that a copy matches the original.
+Replaces the 2026-10-09 "locksmith key-duplication board" design (kraft pegboard, brass keys, manila tags,
+receipt printer). Per the 2026-10-10 playbook rule and `design/briefs/certfan.md`, none of that survives:
+no paper, no brass, no tags, no receipts, no stamps, no red ink, no typewriter type.
 
-| Key shop | certfan |
+## Direction
+**Generative data visualisation: a certificate-fingerprint fan chart.** One hostname is a single point;
+DNS resolution fans it out into N hairlines, one per address. Each line ends in a radial glyph drawn from the
+32 bytes of the SHA-256 fingerprint of the certificate that address actually served (in the spirit of an SSH
+visual host key / randomart, but as a precise radial plot: 32 spokes, spoke length = byte value). Nodes that
+serve the same certificate grow identical glyphs. The odd node grows a visibly different glyph, and its line
+breaks and slips out of register.
+
+The page is laid out like a plate in a scientific paper: figures numbered in the margin (Fig. 1–3, Table 1),
+captions and data labels set beside the plot rather than inside cards.
+
+| Science plate | certfan |
 |---|---|
-| a hook on the board | one resolved IP address |
-| the key hanging on it | the certificate that node serves |
-| the key's cuts (bitting) | derived from the cert's serial / fingerprint |
-| steel depth gauge laid across all keys | the comparison pass |
-| tag flipped to red "WRONG CUT" | the node serving a different certificate |
-| "expires" punched on the tag | notAfter |
-| the paper receipt from the cutting machine | the CLI output |
+| origin point of the plot | the hostname |
+| the fan of rays | DNS resolution: every A / AAAA address |
+| radial glyph at the end of a ray | SHA-256 fingerprint of the cert that node served |
+| identical glyphs, acid-lime rays | consistent nodes (pass) |
+| different glyph, broken hot-pink ray | the node serving another / expiring cert (fail) |
+| Table 1 | CLI output |
 
-## Palette (from the object)
-- Pegboard hardboard `#d9c49b`, hole shadow `#8a6a3a`
-- Brass blank `#b8862b`, brass highlight `#dcae4f`, nickel `#a9adae`
-- Manila tag `#f3e6c4`, red string / rejection ink `#c23a22`
-- Stamped ink `#2b2116` (no pure black, no gradients except the flat brass shading)
+## Palette (flat, no gradients, no glow, no red)
+| role | hex |
+|---|---|
+| ground (near-black) | `#0b0b0c` |
+| bone: hairlines, body text | `#e6e4dd` |
+| acid lime: consistent / pass | `#d6ff3b` |
+| hot pink: mismatch / expired / expiring | `#ff2e6a` |
+| graphite: grid, ticks, secondary marks | `#6b6b70` |
 
-## Type
-- **Alfa Slab One**: letters stamped into key blanks / shop sign.
-- **Archivo Narrow**: tag and receipt type, tabular figures. No monospace; the CLI output is set like a
-  thermal receipt from the cutting machine.
+Secondary text that must stay readable uses bone at 72% opacity (renders ≈ `#a8a7a2`, contrast ≥ 7:1);
+graphite is reserved for non-text strokes and large tick labels.
+
+## Type (self-hosted, all SIL OFL 1.1, from Fontsource)
+- **Anybody** (variable, `wdth` 50–150 %, `wght` 100–900): display. Width is data-driven: the word "every"
+  in the headline stretches with the number of resolved addresses; figure numbers are set ultra-condensed.
+- **Atkinson Hyperlegible** 400/700: body and captions.
+- **Atkinson Hyperlegible Mono** 400/500: fingerprints (hex), addresses, commands, Table 1.
+
+## Texture & rendering
+Pure flat vector hairlines (1 px at 1×; glyph spokes 1.25 px). No textures, no shadows, no rounded panels.
+All figures are inline SVG built by ~10 kB of vanilla JS from hard-coded SHA-256 fingerprints
+(four scenarios; "Re-resolve" picks another at random). No framework, no canvas library.
 
 ## Layout
-Centered shop-sign title above a full-width board (not left-copy/right-card). Then a work-order slip, a ruled
-workshop ledger for "how it works" (rows, not columns of cards), the receipt, an install key tag, and a footer.
+Full-bleed asymmetric 12-column grid (40 px outer margin, 24 px gutter). Headline spans cols 1–9, run-in
+plate metadata sits in cols 10–12. Each figure: caption + data legend in a margin column (cols 1–3),
+plot in cols 4–12, framed only by graphite corner ticks and axis hairlines. On ≤ 760 px everything stacks to
+one column, the fan rotates to fan downward, captions follow the plot.
+- Fig. 1 fan chart (hero, interactive).
+- Fig. 2 comparison matrix: what a single-IP check sees vs what certfan checks (marks, not cards).
+- Fig. 3 lane plot: certificate served per node over 50 days of a renewal; the stale lane breaks.
+- Table 1 sample output, then install command.
 
-## Motion (all meaningful)
-1. Keys are hung on their hooks one after another and settle with a small pendulum sway.
-2. The steel gauge slides down across the teeth; where cuts match, nothing happens; on the odd key the gauge
-   snags, the key jolts and its tag flips to red WRONG CUT (that is the product's whole verdict).
-3. "Cut again" re-randomises which node is stale.
-4. Receipt prints line by line when scrolled into view.
-`prefers-reduced-motion`: everything renders in its final state, no sway, no printing.
+## Motion (precise, rhythmic, no bounce; linear / ease-out only)
+1. Resolve: the fan's hairlines draw out from the hostname point (stroke-dashoffset), 90 ms stagger.
+2. Fingerprint: each node's glyph is drawn spoke by spoke, one byte at a time, while the legend's hex
+   string fills in the same bytes.
+3. Compare: consistent rays and glyphs turn acid lime together; the mismatched ray turns hot pink, breaks
+   at its midpoint and its outer half + glyph slide out of register by a fixed offset.
+4. Fig. 3 lanes draw left→right when scrolled into view.
+`prefers-reduced-motion: reduce` renders the final compared state immediately, no transitions.
 
-## Banned-trope self-check
-No dark background, no cyan/purple, no gradient text, no glow, no glassmorphism, no left/right hero, no 3-column
-feature cards, no SaaS template, no Inter, no monospace pairing. Distinct from toolsmoke (lab inspection report)
-and agentckpt (film-editing bench).
+## Logo
+Five hairline rays fanning from one point on a square black field; four bone, one hot pink, broken and
+displaced. No rounded app-icon tile, no outline cartoon. Same construction in `favicon.svg` (heavier stroke
+for 16 px), `logo.svg`, `logo-512.png`, OG images and the GitHub social preview.
+
+## OG / social preview
+Black plate, the Fig. 1 fan chart in its final compared state, the `certfan` wordmark in wide Anybody and one
+line: "Your cert renewed. Did every node get it?" (1200×630 `og-image.png`, `docs/assets/og-docs.png`;
+1280×640 `social-preview.png` / `og-social-preview.png`).
+
+## Difference self-check against design/registry.md
+| axis | certfan | closest other | different? |
+|---|---|---|---|
+| ground lightness | near-black `#0b0b0c` | runbill mid-cool grey, agentckpt mid LCD green, toolsmoke/linelore light | yes: only dark site |
+| palette | bone / acid lime / hot pink / graphite | linelore white+black+orange; agentckpt DMG greens | yes: no shared hex, no red ink |
+| type | Anybody + Atkinson Hyperlegible (+ Mono) | runbill Unbounded + Red Hat; linelore Schibsted | yes: no shared family, no typewriter, no slab |
+| texture | flat hairlines, no texture | linelore flat but typographic; runbill flat-shaded 3D | yes: line-art data plot |
+| rendering | generative SVG from fingerprint bytes | agentckpt pixel canvas; runbill isometric | yes |
+| layout | full-bleed figure plate, margin captions | linelore Swiss grid with giant type; toolsmoke report page | yes: plot-led, not type-led, not paper |
+| motion | ray draw → byte-by-byte glyph → compare & slip | toolsmoke type/stamp, linelore kinetic type, runbill falling blocks | yes: no printing/typing |
+| logo | 5-ray fan, one pink ray displaced, square black field | others: stamp wordmark, pixel flag, "l:42", iso cubes | yes |
+
+Banned list check: no cyan/purple/blue gradient (no gradients at all), no gradient text, no glow, no
+glassmorphism, no left-copy/right-card hero (headline above a full-width plate), no 3-column cards,
+no SaaS template, no Inter.
