@@ -86,13 +86,15 @@
       const outer = el("path", { class: "ray", d: `M${f1(O[0] + ux * midL)} ${f1(O[1] + uy * midL)}L${f1(O[0] + ux * endL)} ${f1(O[1] + uy * endL)}`, stroke: C.bone, "stroke-width": 1 }, slip);
       const gl = el("g", { transform: `translate(${f1(cx)} ${f1(cy)})` }, slip);
       el("circle", { class: "ring", r: R, stroke: C.graphite, "stroke-width": .75 }, gl);
-      const b = bytes(fp), r0 = R * .14, spokes = [], tips = [];
+      // all 32 spokes live in one path; the animation grows its "d" one byte at a time (few DOM nodes = cheap style/layout)
+      const b = bytes(fp), r0 = R * .14, segs = [], tips = [];
       b.forEach((v, k) => {
         const a = -Math.PI / 2 + k * Math.PI * 2 / 32, len = r0 + (R - r0) * (.12 + .88 * v / 255);
         const x = Math.cos(a) * len, y = Math.sin(a) * len;
         tips.push(`${f1(x)} ${f1(y)}`);
-        spokes.push(el("path", { class: "spoke", d: `M${f1(Math.cos(a) * r0)} ${f1(Math.sin(a) * r0)}L${f1(x)} ${f1(y)}`, stroke: C.bone, "stroke-width": 1.25, "stroke-linecap": "square" }, gl));
+        segs.push(`M${f1(Math.cos(a) * r0)} ${f1(Math.sin(a) * r0)}L${f1(x)} ${f1(y)}`);
       });
+      const spk = el("path", { class: "spoke", d: segs.join(""), stroke: C.bone, "stroke-width": 1.25, "stroke-linecap": "square" }, gl);
       const poly = el("path", { class: "spoke", d: "M" + tips.join("L") + "Z", stroke: C.bone, "stroke-width": .75, "stroke-linejoin": "miter" }, gl);
       let lab = null;
       if (vertical) {
@@ -107,7 +109,7 @@
       // the odd node slips out of register: outward and sideways, away from the fan's centre line
       const side = vertical ? (cx < O[0] ? -1 : 1) : (cy < H / 2 ? -1 : 1);
       const slipT = vertical ? `translate(${f1(R * .35 * side)} ${f1(R * .55)})` : `translate(${f1(R * .8)} ${f1(R * .28 * side)})`;
-      return { ip, fp, isBad, inner, outer, spokes, poly, slip, slipT, rayLen: midL, outLen: endL - midL, items: [inner, outer, poly, ...spokes] };
+      return { ip, fp, isBad, inner, outer, spk, segs, poly, slip, slipT, rayLen: midL, outLen: endL - midL, items: [inner, outer, poly, spk] };
     });
     return { nodes, svg };
   }
@@ -152,7 +154,9 @@
   }
 
   function dims() {
-    const w = fanBox.clientWidth || 1000, h = fanBox.clientHeight || 560, vertical = narrow.matches;
+    // estimated from the viewport (mirrors the CSS grid) so we never force a synchronous layout at start-up
+    const vertical = narrow.matches, iw = innerWidth, ih = innerHeight;
+    const w = vertical ? iw - 40 : iw - 80, h = vertical ? Math.max(420, ih - 56 - 8 - 150) : Math.max(360, ih - 64 - 16 - 158);
     const o = vertical ? { vertical, H: Math.max(400, Math.round(360 * h / w)) } : { vertical, W: Math.max(1000, Math.round(560 * w / h)) };
     o.key = (vertical ? "v" : "h") + (o.H || o.W);
     return o;
@@ -178,7 +182,7 @@
         p.style.strokeDasharray = len + 1; p.style.strokeDashoffset = len + 1;
         later(() => { p.style.transition = `stroke-dashoffset ${part ? 260 : 340}ms linear`; p.style.strokeDashoffset = 0; }, 120 + i * 90 + part * 340);
       });
-      nd.spokes.forEach(s => s.style.opacity = 0);
+      nd.spk.setAttribute("d", "");
       nd.poly.style.opacity = 0;
     });
     const t1 = 120 + n * 90 + 600;
@@ -188,7 +192,7 @@
     for (let k = 0; k < 32; k++) {
       later(() => {
         fig.nodes.forEach((nd, i) => {
-          nd.spokes[k].style.opacity = 1;
+          nd.spk.setAttribute("d", nd.segs.slice(0, k + 1).join(""));
           lis[i].children[2].textContent = nd.fp.slice(0, (k + 1) * 2);
         });
       }, t1 + k * STEP);
@@ -213,12 +217,13 @@
     run(true);
   });
   // the plate fills the first viewport: re-fit the viewBox to the box when it changes shape
-  let lastKey = dims().key, rt = 0;
+  let lastKey = "", rt = 0;
   addEventListener("resize", () => {
     clearTimeout(rt);
     rt = setTimeout(() => { const k = dims().key; if (k !== lastKey) { lastKey = k; run(false); } }, 150);
   });
-  run(true);
+  // start after the first paint, so the page's first layout isn't forced inside this script's task
+  requestAnimationFrame(() => setTimeout(() => { lastKey = dims().key; run(true); }, 0));
 
   // ---------- Fig. 3: lanes over 50 days ----------
   const lanesBox = document.getElementById("lanes");
@@ -275,8 +280,6 @@
     requestAnimationFrame(() => requestAnimationFrame(() => draw.forEach(p => { p.style.strokeDashoffset = 0; p.style.opacity = 1; })));
   }
   if (!reduce.matches && "IntersectionObserver" in window) {
-    lanes(false);
-    const svg0 = lanesBox.firstChild; svg0.style.visibility = "hidden";
     const io = new IntersectionObserver(es => {
       if (!es[0].isIntersecting) return;
       io.disconnect(); lanes(true);
