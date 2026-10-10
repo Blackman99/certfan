@@ -37,8 +37,8 @@ Secondary text that must stay readable uses bone at 72% opacity (renders ≈ `#a
 graphite is reserved for non-text strokes and large tick labels.
 
 ## Type (self-hosted, all SIL OFL 1.1, from Fontsource)
-- **Anybody** (variable, `wdth` 50–150 %, `wght` 100–900): display. Width is data-driven: the word "every"
-  in the headline stretches with the number of resolved addresses; figure numbers are set ultra-condensed.
+- **Anybody** (variable, `wdth` 50–150 %, `wght` 100–900): wordmark, section titles and figure numbers
+  (ultra-condensed "FIG. 1"). There is no display headline (see Layout).
 - **Atkinson Hyperlegible** 400/700: body and captions.
 - **Atkinson Hyperlegible Mono** 400/500: fingerprints (hex), addresses, commands, Table 1.
 
@@ -48,14 +48,20 @@ All figures are inline SVG built by ~10 kB of vanilla JS from hard-coded SHA-256
 (four scenarios; "Re-resolve" picks another at random). No framework, no canvas library.
 
 ## Layout
-Full-bleed asymmetric 12-column grid (40 px outer margin, 24 px gutter). Headline spans cols 1–9, run-in
-plate metadata sits in cols 10–12. Each figure: caption + data legend in a margin column (cols 1–3),
-plot in cols 4–12, framed only by graphite corner ticks and axis hairlines. On ≤ 760 px everything stacks to
-one column, the fan rotates to fan downward, captions follow the plot.
-- Fig. 1 fan chart (hero, interactive).
-- Fig. 2 comparison matrix: what a single-IP check sees vs what certfan checks (marks, not cards).
-- Fig. 3 lane plot: certificate served per node over 50 days of a renewal; the stale lane breaks.
-- Table 1 sample output, then install command.
+Revised 2026-10-10 (structure only): certfan, linelore and runbill all opened with a big bold question headline
+at top-left, so certfan no longer has a display headline. **Fig. 1 is the first screen.**
+- Header rule (wordmark, plate metadata, Docs/GitHub), then the Fig. 1 fan chart spanning all 12 columns and
+  filling the rest of the first viewport (`100svh` minus header and caption strip). The SVG viewBox is re-fitted
+  to the box's aspect (desktop widens, mobile lengthens) so the plot, not a frame around it, fills the screen.
+- Directly under the plot, a caption strip in caption typography: the page's `h1` *is* the figure caption,
+  "Fig. 1 — Did every node get the renewed certificate?" (Atkinson Hyperlegible 700, 19 px, with the "FIG. 1"
+  label in ultra-condensed Anybody), then one sentence of explanation and a one-line reading key (cols 1–8).
+  The FAIL readout and the Re-resolve control sit beside it (cols 9–12); the per-address legend follows below.
+- Below the fold, unchanged: full-bleed asymmetric 12-column grid (40 px margin, 24 px gutter); each later figure
+  has caption + data in a margin column (cols 1–3) and plot in cols 4–12, framed only by graphite corner ticks.
+  On ≤ 760 px everything stacks to one column; the fan rotates to fan downward and still fills the first screen,
+  caption directly under it.
+- Fig. 2 comparison matrix · Fig. 3 lane plot (50 days of a renewal) · Table 1 sample output + install.
 
 ## Motion (precise, rhythmic, no bounce; linear / ease-out only)
 1. Resolve: the fan's hairlines draw out from the hostname point (stroke-dashoffset), 90 ms stagger.
@@ -72,8 +78,9 @@ displaced. No rounded app-icon tile, no outline cartoon. Same construction in `f
 for 16 px), `logo.svg`, `logo-512.png`, OG images and the GitHub social preview.
 
 ## OG / social preview
-Black plate, the Fig. 1 fan chart in its final compared state, the `certfan` wordmark in wide Anybody and one
-line: "Your cert renewed. Did every node get it?" (1200×630 `og-image.png`, `docs/assets/og-docs.png`;
+Same structure as the page: small `certfan` wordmark rule at the top, the Fig. 1 fan chart (final compared
+state) filling the plate, and a caption strip below it: "FIG. 1 — Did every node get the renewed certificate?"
+plus one line of explanation. No top-left display headline. (1200×630 `og-image.png`, `docs/assets/og-docs.png`;
 1280×640 `social-preview.png` / `og-social-preview.png`).
 
 ## Difference self-check against design/registry.md
@@ -84,7 +91,7 @@ line: "Your cert renewed. Did every node get it?" (1200×630 `og-image.png`, `do
 | type | Anybody + Atkinson Hyperlegible (+ Mono) | runbill Unbounded + Red Hat; linelore Schibsted | yes: no shared family, no typewriter, no slab |
 | texture | flat hairlines, no texture | linelore flat but typographic; runbill flat-shaded 3D | yes: line-art data plot |
 | rendering | generative SVG from fingerprint bytes | agentckpt pixel canvas; runbill isometric | yes |
-| layout | full-bleed figure plate, margin captions | linelore Swiss grid with giant type; toolsmoke report page | yes: plot-led, not type-led, not paper |
+| layout | first screen = Fig. 1 chart, caption below; no display headline | linelore and runbill open with a big bold question headline top-left; toolsmoke report page | yes: plot-led, not type-led, not paper |
 | motion | ray draw → byte-by-byte glyph → compare & slip | toolsmoke type/stamp, linelore kinetic type, runbill falling blocks | yes: no printing/typing |
 | logo | 5-ray fan, one pink ray displaced, square black field | others: stamp wordmark, pixel flag, "l:42", iso cubes | yes |
 

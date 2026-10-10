@@ -41,21 +41,17 @@
 </header>
 
 <main>
-<section class="lead g" aria-labelledby="h">
-  <h1 id="h"><span class="l1">Your cert renewed.</span> <span class="l2">Did <span id="every" class="every">every</span> node get&nbsp;it?</span></h1>
-  <p class="meta2 mono">certfan · a zero-dependency CLI<br>for every address behind a TLS name</p>
-</section>
-
-<figure class="plate g" id="fig1" aria-labelledby="f1c">
-  <figcaption id="f1c" class="cap">
-    <p class="fn"><span>Fig.</span>&nbsp;1</p>
-    <p class="dek">certfan resolves <b>every</b> A/AAAA address behind a hostname, handshakes each one with the right SNI, and fails when they don’t all serve the same valid, not-nearly-expired certificate.</p>
-    <p><b id="host">shop.example.com</b> resolves to <span id="count">4</span> addresses. Each ray ends in a glyph drawn from the SHA-256 of the certificate that address served: 32 spokes, one per byte, length = byte value.</p>
-    <p>Same certificate, same glyph. <span class="k ok">lime</span> = consistent; <span class="k bad">pink</span> = the odd one out.</p>
+<figure class="plate hero g" id="fig1" aria-labelledby="h">
+  <div class="plot" id="fan" role="img" aria-label="Fan chart: the hostname fans out to each resolved address; one address serves a different certificate and its ray breaks out of line."></div>
+  <figcaption class="cap">
+    <h1 id="h"><span class="fn-inline">Fig.&nbsp;1</span> <span class="dash" aria-hidden="true">—</span> Did every node get the renewed certificate?</h1>
+    <p class="one">certfan resolves every A/AAAA address behind a hostname, handshakes each one with the right SNI, and fails when they don’t all serve the same valid, not-nearly-expired certificate.</p>
+    <p class="read"><b id="host">shop.example.com</b> → <span id="count">4</span> addresses. Glyph = SHA-256 of the certificate each address served, one spoke per byte. <span class="k ok">lime</span> consistent, <span class="k bad">pink</span> the odd one out.</p>
+  </figcaption>
+  <div class="readout">
     <p id="verdict" class="verdict" aria-live="polite">resolving…</p>
     <button id="again" type="button">Re-resolve ↻</button>
-  </figcaption>
-  <div class="plot" id="fan" role="img" aria-label="Fan chart: the hostname fans out to each resolved address; one address serves a different certificate and its ray breaks out of line."></div>
+  </div>
   <ol class="legend mono" id="legend" aria-label="Addresses and fingerprints"></ol>
 </figure>
 

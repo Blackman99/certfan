@@ -30,7 +30,7 @@
   // ---------- Fig. 1: fan chart ----------
   function fan(box, sc, bad, opt) {
     const vertical = !!opt.vertical;
-    const W = vertical ? 360 : 1000, H = vertical ? 400 : 560;
+    const W = vertical ? 360 : (opt.W || 1000), H = vertical ? (opt.H || 400) : 560;
     const n = sc.nodes.length;
     box.textContent = "";
     const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true" }, box);
@@ -43,13 +43,13 @@
     if (vertical) {
       const span = W - 24, step = span / n;
       R = Math.min(30, step / 2 - 5);
-      for (let i = 0; i < n; i++) pos.push([12 + step * (i + .5), 290 + Math.abs(i - (n - 1) / 2) * -10]);
+      for (let i = 0; i < n; i++) pos.push([12 + step * (i + .5), H - 110 + Math.abs(i - (n - 1) / 2) * -10]);
     } else {
       const step = (H - 48) / n;
       R = Math.min(52, step / 2 - 12);
       for (let i = 0; i < n; i++) {
         const y = 24 + step * (i + .5);
-        pos.push([640 + Math.abs(y - H / 2) * .28, y]);
+        pos.push([W - 360 + Math.abs(y - H / 2) * .28, y]);
       }
     }
     // host label
@@ -119,14 +119,13 @@
       if (nd.isBad) nd.slip.setAttribute("transform", nd.slipT);
     });
   }
-  window.certfanFan = (box, i, bad, vertical) => { const f = fan(box, SCEN[i], bad, { vertical }); finalState(f); return f; };
+  window.certfanFan = (box, i, bad, opt) => { const f = fan(box, SCEN[i], bad, opt || {}); finalState(f); return f; };
 
   const fanBox = document.getElementById("fan");
   if (!fanBox) return; // OG render mode
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
   const narrow = matchMedia("(max-width: 760px)");
   const legend = document.getElementById("legend"), verdict = document.getElementById("verdict");
-  const every = document.getElementById("every");
   let cur = { s: 0, bad: 2 }, timers = [], fig = null;
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
@@ -152,14 +151,19 @@
     verdict.classList.add("fail");
   }
 
+  function dims() {
+    const w = fanBox.clientWidth || 1000, h = fanBox.clientHeight || 560, vertical = narrow.matches;
+    const o = vertical ? { vertical, H: Math.max(400, Math.round(360 * h / w)) } : { vertical, W: Math.max(1000, Math.round(560 * w / h)) };
+    o.key = (vertical ? "v" : "h") + (o.H || o.W);
+    return o;
+  }
   function run(animate) {
     timers.forEach(clearTimeout); timers = [];
     const sc = SCEN[cur.s], bad = cur.bad, n = sc.nodes.length;
     document.getElementById("host").textContent = sc.host;
     document.getElementById("count").textContent = n;
-    every.style.setProperty("--every", (58 + n * 14) + "%");
     verdict.classList.remove("fail");
-    fig = fan(fanBox, sc, bad, { vertical: narrow.matches });
+    fig = fan(fanBox, sc, bad, dims());
     if (!animate || reduce.matches) {
       finalState(fig);
       settleLegend(buildLegend(sc, bad, true), sc, bad);
@@ -208,7 +212,12 @@
     cur = { s, bad: Math.floor(Math.random() * SCEN[s].nodes.length) };
     run(true);
   });
-  narrow.addEventListener("change", () => run(false));
+  // the plate fills the first viewport: re-fit the viewBox to the box when it changes shape
+  let lastKey = dims().key, rt = 0;
+  addEventListener("resize", () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { const k = dims().key; if (k !== lastKey) { lastKey = k; run(false); } }, 150);
+  });
   run(true);
 
   // ---------- Fig. 3: lanes over 50 days ----------
