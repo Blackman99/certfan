@@ -1,7 +1,7 @@
 """Parse a targets file for `certfan check -f`."""
 from __future__ import annotations
 
-from typing import Iterator, Optional, Tuple
+from typing import Tuple
 
 
 def parse_targets_file(path: str) -> list[Tuple[str, dict]]:
