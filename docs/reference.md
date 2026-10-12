@@ -1,15 +1,17 @@
 # Command reference
 
 ```
-certfan check host[:port] [host[:port] ...]
+certfan check [host[:port] ...]
+  -f, --file FILE         read targets from FILE (one host[:port] per line;
+                          # comments; optional warn_days=N warn_pct=N per line)
   -4 / -6                 restrict to IPv4 / IPv6
   --connect IP[:PORT]     probe these addresses instead of DNS (repeatable, single target)
   --sni NAME              SNI / name to verify (default: target host)
   --cafile FILE           extra CA bundle
   --no-verify             skip chain/hostname verification
   --allow-unreachable     unreachable address = WARN, not FAIL
-  --warn-days N           default 7
-  --warn-pct N            default 33
+  --warn-days N           default 7 (overridable per line in -f)
+  --warn-pct N            default 33 (overridable per line in -f)
   --format text|json|prom
   --prom-file FILE        also write Prometheus metrics atomically
   --timeout SECONDS       per address, default 5
@@ -19,3 +21,6 @@ certfan --version
 ```
 
 Exit codes: `0` all pass, `1` worst finding is WARN, `2` any FAIL.
+
+JSON nodes include `chain_fingerprints` (SHA-256 hex, leaf first) and `ocsp_stapled`.
+Prometheus adds `certfan_node_ocsp_stapled` and `certfan_node_chain_len`.

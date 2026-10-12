@@ -16,15 +16,18 @@ when they don't all serve the same, valid, not-nearly-expired certificate.
 ## Install
 
 ```bash
-pipx install "git+https://github.com/Blackman99/certfan@v0.1.0"   # pure Python 3.9+, zero dependencies
+pipx install "git+https://github.com/Blackman99/certfan@v0.2.0"   # pure Python 3.9+, zero dependencies
 ```
 
 ## Use
 
 ```bash
 certfan check example.com api.example.com:8443
+certfan check -f hosts.txt          # one host[:port] per line; optional warn_days=N warn_pct=N
 certfan demo     # three local nodes, one serving a different cert
 ```
+
+Compares leaf fingerprints and the presented chain (intermediates) across every address, and notes OCSP stapling presence per node.
 
 ```
 shop.example.com  3 address(es), 2 distinct certificate(s)

@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from . import __version__
 from .probe import probe, resolve
 from .report import RANK, evaluate, render_text, to_json, to_prom
+from .targets import parse_targets_file
 
 EXIT = {"PASS": 0, "WARN": 1, "FAIL": 2}
 
@@ -34,9 +35,11 @@ def _addr(s: str, default_port: int):
     return s, default_port
 
 
-def check_target(target, args, connect=None):
+def check_target(target, args, connect=None, warn_days=None, warn_pct=None):
     host, port = _split(target)
     sni = args.sni or host
+    wd = args.warn_days if warn_days is None else warn_days
+    wp = args.warn_pct if warn_pct is None else warn_pct
     if connect:
         addrs = [_addr(a, port) for a in connect]
     else:
@@ -45,13 +48,11 @@ def check_target(target, args, connect=None):
         except OSError as e:
             from .probe import NodeResult
             n = NodeResult(ip=host, port=port, error=f"DNS: {e}")
-            return evaluate(target, [n], args.warn_days, args.warn_pct,
-                            allow_unreachable=args.allow_unreachable)
+            return evaluate(target, [n], wd, wp, allow_unreachable=args.allow_unreachable)
     with ThreadPoolExecutor(max_workers=min(32, max(1, len(addrs)))) as ex:
         nodes = list(ex.map(lambda a: probe(a[0], a[1], sni, args.timeout, args.cafile,
                                             not args.no_verify), addrs))
-    return evaluate(target, nodes, args.warn_days, args.warn_pct,
-                    allow_unreachable=args.allow_unreachable)
+    return evaluate(target, nodes, wd, wp, allow_unreachable=args.allow_unreachable)
 
 
 def _emit(reps, args):
@@ -81,13 +82,33 @@ def _common(p):
     p.add_argument("--timeout", type=float, default=5.0, help="per-address timeout seconds")
 
 
+def _collect_jobs(args, ap):
+    """Build [(target, warn_days, warn_pct), ...] from positionals and optional -f file."""
+    jobs = []
+    for t in args.targets:
+        jobs.append((t, args.warn_days, args.warn_pct))
+    if getattr(args, "targets_file", None):
+        try:
+            entries = parse_targets_file(args.targets_file)
+        except (OSError, ValueError) as e:
+            ap.error(str(e))
+        for t, ov in entries:
+            jobs.append((t, ov.get("warn_days", args.warn_days), ov.get("warn_pct", args.warn_pct)))
+    if not jobs:
+        ap.error("provide at least one host[:port] or -f FILE")
+    return jobs
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="certfan", description="Probe every IP behind a TLS hostname "
                                  "and catch the node still serving an old or broken certificate.")
     ap.add_argument("--version", action="version", version=f"certfan {__version__}")
     sub = ap.add_subparsers(dest="cmd")
     c = sub.add_parser("check", help="check one or more host[:port] targets")
-    c.add_argument("targets", nargs="+", metavar="host[:port]")
+    c.add_argument("targets", nargs="*", metavar="host[:port]")
+    c.add_argument("-f", "--file", dest="targets_file", metavar="FILE",
+                   help="read targets from FILE (one host[:port] per line; # comments; "
+                        "optional warn_days=N warn_pct=N per line)")
     c.add_argument("-4", dest="family", action="store_const", const="4", default="any")
     c.add_argument("-6", dest="family", action="store_const", const="6")
     c.add_argument("--connect", action="append", metavar="IP[:PORT]",
@@ -102,9 +123,11 @@ def main(argv=None):
     _common(d)
     args = ap.parse_args(argv)
     if args.cmd == "check":
-        if args.connect and len(args.targets) > 1:
+        jobs = _collect_jobs(args, ap)
+        if args.connect and len(jobs) > 1:
             ap.error("--connect works with a single target")
-        reps = [check_target(t, args, args.connect) for t in args.targets]
+        reps = [check_target(t, args, args.connect, warn_days=wd, warn_pct=wp)
+                for t, wd, wp in jobs]
         return _emit(reps, args)
     if args.cmd == "demo":
         from .demo import bundled_ca, serve

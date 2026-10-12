@@ -28,6 +28,8 @@ class NodeResult:
     not_after: Optional[_dt.datetime] = None
     tls_version: str = ""
     ms: float = 0.0
+    chain_fingerprints: list = field(default_factory=list)  # SHA-256 hex, leaf first
+    ocsp_stapled: bool = False
 
     @property
     def addr(self) -> str:
@@ -52,13 +54,57 @@ def resolve(host: str, port: int, family: str = "any") -> list[str]:
     return seen
 
 
+def _der_from_chain_item(cert) -> Optional[bytes]:
+    if isinstance(cert, (bytes, bytearray)):
+        return bytes(cert)
+    if hasattr(cert, "public_bytes"):
+        try:
+            import _ssl
+            return cert.public_bytes(_ssl.ENCODING_DER)
+        except Exception:
+            try:
+                return cert.public_bytes()
+            except Exception:
+                return None
+    return None
+
+
+def _peer_chain_ders(sock, leaf_der: Optional[bytes]) -> list[bytes]:
+    """Presented chain as DER bytes (leaf first). Full chain needs Python 3.13+."""
+    candidates = []
+    if hasattr(sock, "get_unverified_chain"):
+        candidates.append(sock.get_unverified_chain)
+    sslobj = getattr(sock, "_sslobj", None)
+    if sslobj is not None and hasattr(sslobj, "get_unverified_chain"):
+        candidates.append(sslobj.get_unverified_chain)
+    for get in candidates:
+        try:
+            chain = get()
+        except Exception:
+            continue
+        if not chain:
+            continue
+        out: list[bytes] = []
+        for item in chain:
+            der = _der_from_chain_item(item)
+            if der:
+                out.append(der)
+        if out:
+            return out
+    return [leaf_der] if leaf_der else []
+
+
 def _handshake(ip: str, port: int, sni: str, timeout: float, ctx: ssl.SSLContext):
     fam = socket.AF_INET6 if ":" in ip else socket.AF_INET
     with socket.socket(fam, socket.SOCK_STREAM) as raw:
         raw.settimeout(timeout)
         raw.connect((ip, port))
         with ctx.wrap_socket(raw, server_hostname=sni) as s:
-            return s.getpeercert(binary_form=True), s.version()
+            der = s.getpeercert(binary_form=True)
+            version = s.version()
+            chain = _peer_chain_ders(s, der)
+            ocsp = getattr(s, "ocsp_response", None)
+            return der, version, chain, bool(ocsp)
 
 
 def probe(ip: str, port: int, sni: str, timeout: float = 5.0,
@@ -66,10 +112,12 @@ def probe(ip: str, port: int, sni: str, timeout: float = 5.0,
     r = NodeResult(ip=ip, port=port)
     t0 = time.perf_counter()
     der = None
+    chain_ders: list[bytes] = []
+    ocsp = False
     if verify:
         ctx = ssl.create_default_context(cafile=cafile)
         try:
-            der, r.tls_version = _handshake(ip, port, sni, timeout, ctx)
+            der, r.tls_version, chain_ders, ocsp = _handshake(ip, port, sni, timeout, ctx)
         except ssl.SSLCertVerificationError as e:
             r.verify_error = e.verify_message or str(e)
         except ssl.SSLError as e:
@@ -83,13 +131,17 @@ def probe(ip: str, port: int, sni: str, timeout: float = 5.0,
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         try:
-            der, r.tls_version = _handshake(ip, port, sni, timeout, ctx)
+            der, r.tls_version, chain_ders, ocsp = _handshake(ip, port, sni, timeout, ctx)
         except OSError as e:
             r.error = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
             r.ms = (time.perf_counter() - t0) * 1000
             return r
     r.ms = (time.perf_counter() - t0) * 1000
     r.fingerprint = hashlib.sha256(der).hexdigest()
+    if not chain_ders:
+        chain_ders = [der]
+    r.chain_fingerprints = [hashlib.sha256(c).hexdigest() for c in chain_ders]
+    r.ocsp_stapled = ocsp
     info = parse_cert(der)
     r.serial = info["serial"]
     r.subject_cn = info["subject_cn"]
