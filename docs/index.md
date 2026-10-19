@@ -18,7 +18,7 @@ certfan:
 6. exits `0`/`1`/`2` and can emit JSON or Prometheus textfile metrics.
 
 ```bash
-pipx install "git+https://github.com/Blackman99/certfan@v0.2.0"
+pipx install "git+https://github.com/Blackman99/certfan@v0.3.0"
 certfan demo
 certfan check example.com
 ```

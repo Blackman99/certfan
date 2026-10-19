@@ -9,9 +9,24 @@ PASS, WARN, FAIL = "PASS", "WARN", "FAIL"
 RANK = {PASS: 0, WARN: 1, FAIL: 2}
 
 
-def evaluate(host, nodes, warn_days=7.0, warn_pct=33.0, now=None, allow_unreachable=False):
+def evaluate(host, nodes, warn_days=7.0, warn_pct=33.0, now=None, allow_unreachable=False,
+             dns=None, dns_divergence="note"):
+    """dns: optional {"resolvers": [labels], "errors": {label: msg}} from --resolver."""
     now = now or _dt.datetime.now(_dt.timezone.utc)
     findings = []  # (level, ip or "*", message)
+    dns_info = None
+    if dns:
+        answered = [r for r in dns["resolvers"] if r not in dns.get("errors", {})]
+        partial = [n for n in nodes if n.resolvers and set(answered) - set(n.resolvers)]
+        dns_info = {"resolvers": list(dns["resolvers"]), "errors": dict(dns.get("errors", {})),
+                    "divergent": bool(partial)}
+        for r, msg in dns_info["errors"].items():
+            findings.append((WARN, f"resolver {r}", f"lookup failed: {msg}"))
+        if partial and dns_divergence in (WARN.lower(), FAIL.lower()):
+            lvl = WARN if dns_divergence == "warn" else FAIL
+            for n in partial:
+                missing = ", ".join(r for r in answered if r not in n.resolvers)
+                findings.append((lvl, n.addr, f"not returned by resolver {missing} (DNS answers differ)"))
     good = [n for n in nodes if n.ok]
     for n in nodes:
         if not n.ok:
@@ -73,7 +88,7 @@ def evaluate(host, nodes, warn_days=7.0, warn_pct=33.0, now=None, allow_unreacha
         findings.append((FAIL, "*", "hostname resolved to no addresses"))
     verdict = max((f[0] for f in findings), key=RANK.get, default=PASS)
     return {"host": host, "verdict": verdict, "distinct_certs": len(fps),
-            "nodes": nodes, "findings": findings, "checked_at": now}
+            "nodes": nodes, "findings": findings, "checked_at": now, "dns": dns_info}
 
 
 def node_level(rep, ip):
@@ -86,7 +101,13 @@ def render_text(reps, color=False):
     col = {PASS: "32", WARN: "33", FAIL: "31;1"}
     out = []
     for rep in reps:
-        out.append(c(f"{rep['host']}", "1") + f"  {len(rep['nodes'])} address(es), "
+        dns = rep.get("dns")
+        via = ""
+        if dns:
+            k = len(dns["resolvers"])
+            agree = "answers differ" if dns["divergent"] else "answers agree"
+            via = f" from {k} resolver{'s' if k != 1 else ''} ({agree})"
+        out.append(c(f"{rep['host']}", "1") + f"  {len(rep['nodes'])} address(es){via}, "
                    f"{rep['distinct_certs']} distinct certificate(s)")
         fps = {}
         for n in rep["nodes"]:
@@ -99,6 +120,8 @@ def render_text(reps, color=False):
                         f"{n.tls_version}  chain:{chain_n}  {ocsp}  {n.ms:.0f}ms")
             else:
                 desc = n.error
+            if dns and dns["divergent"] and n.resolvers:
+                desc += "  via " + ",".join(n.resolvers)
             out.append(f"  {c(lvl.ljust(4), col[lvl])}  {n.addr:<39} {desc}")
         for lvl, ip, msg in rep["findings"]:
             out.append(f"    {c('-', col[lvl])} {ip}: {msg}")
@@ -111,6 +134,7 @@ def to_json(reps):
     return json.dumps([{
         "host": r["host"], "verdict": r["verdict"], "distinct_certs": r["distinct_certs"],
         "checked_at": r["checked_at"].isoformat(),
+        **({"dns": r["dns"]} if r.get("dns") else {}),
         "nodes": [dict(n.to_dict(), status=node_level(r, n.addr)) for n in r["nodes"]],
         "findings": [{"level": a, "ip": b, "message": m} for a, b, m in r["findings"]],
     } for r in reps], indent=2)
@@ -125,6 +149,8 @@ def to_prom(reps):
              "# TYPE certfan_node_ocsp_stapled gauge",
              "# HELP certfan_node_chain_len Number of certificates in the presented chain (leaf first).",
              "# TYPE certfan_node_chain_len gauge",
+             "# HELP certfan_dns_divergent 1 if the --resolver answers for this host differ.",
+             "# TYPE certfan_dns_divergent gauge",
              "# HELP certfan_distinct_certs Distinct certificates served across all addresses.",
              "# TYPE certfan_distinct_certs gauge"]
     for r in reps:
@@ -137,4 +163,6 @@ def to_prom(reps):
                 lines.append(f"certfan_node_chain_len{{{lab}}} {len(n.chain_fingerprints) or 1}")
             lines.append(f"certfan_node_status{{{lab}}} {RANK[node_level(r, n.addr)]}")
         lines.append(f'certfan_distinct_certs{{host="{h}"}} {r["distinct_certs"]}')
+        if r.get("dns"):
+            lines.append(f'certfan_dns_divergent{{host="{h}"}} {1 if r["dns"]["divergent"] else 0}')
     return "\n".join(lines) + "\n"

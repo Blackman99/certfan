@@ -31,7 +31,7 @@ Example alert:
 ## CI / after a deploy
 
 ```yaml
-- run: pipx install "git+https://github.com/Blackman99/certfan@v0.2.0"
+- run: pipx install "git+https://github.com/Blackman99/certfan@v0.3.0"
 - run: certfan check shop.example.com --format json > certfan.json
 ```
 

@@ -16,7 +16,7 @@ when they don't all serve the same, valid, not-nearly-expired certificate.
 ## Install
 
 ```bash
-pipx install "git+https://github.com/Blackman99/certfan@v0.2.0"   # pure Python 3.9+, zero dependencies
+pipx install "git+https://github.com/Blackman99/certfan@v0.3.0"   # pure Python 3.9+, zero dependencies
 ```
 
 ## Use
@@ -24,10 +24,13 @@ pipx install "git+https://github.com/Blackman99/certfan@v0.2.0"   # pure Python 
 ```bash
 certfan check example.com api.example.com:8443
 certfan check -f hosts.txt          # one host[:port] per line; optional warn_days=N warn_pct=N
+certfan check example.com --resolver 1.1.1.1 --resolver 8.8.8.8   # probe the union of what each resolver returns
 certfan demo     # three local nodes, one serving a different cert
 ```
 
 Compares leaf fingerprints and the presented chain (intermediates) across every address, and notes OCSP stapling presence per node.
+With GeoDNS or split-horizon DNS, one resolver only shows you some of the nodes: repeat `--resolver` and certfan
+probes every address any of them returned, and says which resolver handed out which one.
 
 ```
 shop.example.com  3 address(es), 2 distinct certificate(s)

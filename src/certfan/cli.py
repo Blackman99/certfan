@@ -35,13 +35,28 @@ def _addr(s: str, default_port: int):
     return s, default_port
 
 
+def _resolver(s: str):
+    from .dns import parse_resolver
+    try:
+        return parse_resolver(s)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e)) from None
+
+
 def check_target(target, args, connect=None, warn_days=None, warn_pct=None):
     host, port = _split(target)
     sni = args.sni or host
     wd = args.warn_days if warn_days is None else warn_days
     wp = args.warn_pct if warn_pct is None else warn_pct
+    dns = None
+    seen_by = {}
     if connect:
         addrs = [_addr(a, port) for a in connect]
+    elif getattr(args, "resolver", None):
+        from .dns import label, resolve_with
+        seen_by, errors = resolve_with(args.resolver, host, args.family, args.timeout)
+        dns = {"resolvers": [label(r) for r in args.resolver], "errors": errors}
+        addrs = [(ip, port) for ip in seen_by]
     else:
         try:
             addrs = [(ip, port) for ip in resolve(host, port, args.family)]
@@ -51,8 +66,11 @@ def check_target(target, args, connect=None, warn_days=None, warn_pct=None):
             return evaluate(target, [n], wd, wp, allow_unreachable=args.allow_unreachable)
     with ThreadPoolExecutor(max_workers=min(32, max(1, len(addrs)))) as ex:
         nodes = list(ex.map(lambda a: probe(a[0], a[1], sni, args.timeout, args.cafile,
-                                            not args.no_verify), addrs))
-    return evaluate(target, nodes, wd, wp, allow_unreachable=args.allow_unreachable)
+                                            not args.no_verify), addrs)) if addrs else []
+    for n in nodes:
+        n.resolvers = list(seen_by.get(n.ip, []))
+    return evaluate(target, nodes, wd, wp, allow_unreachable=args.allow_unreachable,
+                    dns=dns, dns_divergence=getattr(args, "dns_divergence", "note"))
 
 
 def _emit(reps, args):
@@ -113,6 +131,12 @@ def main(argv=None):
     c.add_argument("-6", dest="family", action="store_const", const="6")
     c.add_argument("--connect", action="append", metavar="IP[:PORT]",
                    help="probe these addresses instead of DNS (repeatable; single target only)")
+    c.add_argument("--resolver", action="append", metavar="IP[:PORT]", type=_resolver,
+                   help="ask this DNS resolver instead of the system one (repeatable; addresses "
+                        "from all resolvers are probed, e.g. to catch GeoDNS/split-horizon nodes)")
+    c.add_argument("--dns-divergence", choices=["note", "warn", "fail"], default="note",
+                   help="with 2+ --resolver: how to treat an address only some resolvers return "
+                        "(default note: shown, verdict unchanged)")
     c.add_argument("--sni", help="SNI / hostname to verify (default: the target host)")
     c.add_argument("--cafile", help="extra CA bundle to trust")
     c.add_argument("--no-verify", action="store_true", help="skip chain/hostname verification")
@@ -126,6 +150,8 @@ def main(argv=None):
         jobs = _collect_jobs(args, ap)
         if args.connect and len(jobs) > 1:
             ap.error("--connect works with a single target")
+        if args.connect and args.resolver:
+            ap.error("--connect and --resolver are alternatives; use one")
         reps = [check_target(t, args, args.connect, warn_days=wd, warn_pct=wp)
                 for t, wd, wp in jobs]
         return _emit(reps, args)

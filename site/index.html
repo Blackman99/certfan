@@ -38,7 +38,7 @@
     <svg class="mark" aria-hidden="true" viewBox="0 0 512 512" width="28" height="28"><rect width="512" height="512" fill="#0b0b0c"/><g fill="none" stroke-width="26" stroke-linecap="square"><path d="M118 330L272.9 38.6" stroke="#e6e4dd"/><path d="M118 330L370.8 117.9" stroke="#e6e4dd"/><path d="M118 330L431.8 228.0" stroke="#e6e4dd"/><path d="M118 330L229.9 337.8" stroke="#ff2e6a"/><path d="M280.2 375.4L444.8 386.9" stroke="#ff2e6a"/><path d="M118 330L414.6 474.7" stroke="#e6e4dd"/></g><rect x="88" y="300" width="60" height="60" fill="#e6e4dd"/></svg>
     <span>certfan</span>
   </a>
-  <p class="meta">Plate&nbsp;1 · TLS fingerprint survey · v0.2.0</p>
+  <p class="meta">Plate&nbsp;1 · TLS fingerprint survey · v0.3.0</p>
   <nav><a href="docs/">Docs</a><a href="https://github.com/Blackman99/certfan">GitHub</a></nav>
 </header>
 
@@ -68,6 +68,7 @@
       <thead><tr><th scope="col">check</th><th scope="col">one-IP probe</th><th scope="col">certfan</th><th scope="col" class="how">how</th></tr></thead>
       <tbody>
         <tr><th scope="row">Every A and AAAA address</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">resolved by default, or pass backends with <code>--connect 10.0.0.7:443</code></td></tr>
+        <tr><th scope="row">Every resolver's answer (GeoDNS, split-horizon)</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">repeat <code>--resolver 1.1.1.1 --resolver 8.8.8.8</code>; the union is probed, each node tagged with who returned it</td></tr>
         <tr><th scope="row">TLS handshake per address, right SNI</th><td><i class="m part" role="img" aria-label="one address only"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">chain and hostname verified, served certificate kept</td></tr>
         <tr><th scope="row">Fingerprints compared across nodes</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">the odd one out fails, named by address</td></tr>
         <tr><th scope="row">Expiry warning</th><td><i class="m part" role="img" aria-label="for the address it saw"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">last days, or last third of the certificate’s lifetime, on every node</td></tr>
@@ -106,7 +107,7 @@ shop.example.com  4 address(es), 2 distinct certificate(s)
   verdict: <span class="bad">FAIL</span>   <span class="dim">exit 2</span></pre>
     <div class="install">
       <p class="lbl">install</p>
-      <div class="cmd"><code id="cmd" class="mono">pipx install "git+https://github.com/Blackman99/certfan@v0.2.0"</code><button type="button" id="copy">Copy</button></div>
+      <div class="cmd"><code id="cmd" class="mono">pipx install "git+https://github.com/Blackman99/certfan@v0.3.0"</code><button type="button" id="copy">Copy</button></div>
       <p class="try">then <code class="mono">certfan demo</code> starts three local nodes, one serving a different cert. Offline.</p>
     </div>
   </div>

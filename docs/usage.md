@@ -38,6 +38,30 @@ certfan check shop.example.com --connect 10.0.0.7 --connect 10.0.0.8 --connect 1
 
 SNI and hostname verification use `shop.example.com`. Override with `--sni`.
 
+## Ask several resolvers (GeoDNS, split-horizon)
+
+GeoDNS, latency-based routing and split-horizon DNS give different clients different addresses, so the system
+resolver only ever shows you part of the fleet. Ask several resolvers and certfan probes the union:
+
+```bash
+certfan check shop.example.com --resolver 1.1.1.1 --resolver 8.8.8.8 --resolver 10.0.0.2
+```
+
+```
+shop.example.com  3 address(es) from 3 resolvers (answers differ), 2 distinct certificate(s)
+  PASS  203.0.113.10   cert A  serial 51fe63574478  expires 2026-11-20  TLSv1.3  chain:2  ocsp  41ms  via 1.1.1.1,8.8.8.8,10.0.0.2
+  PASS  198.51.100.4   cert A  serial 51fe63574478  expires 2026-11-20  TLSv1.3  chain:2  ocsp  92ms  via 8.8.8.8
+  FAIL  10.0.4.17      cert B  serial 61c4ec55df4c  expires 2026-10-12  TLSv1.3  chain:2  ocsp  3ms  via 10.0.0.2
+    - 10.0.4.17: serves a different certificate (serial 61c4ec55df4cf8bb, issued 2026-08-13) than the other nodes
+  verdict: FAIL
+```
+
+Different answers on their own are normal for GeoDNS, so by default they are only shown. Use
+`--dns-divergence warn` (or `fail`) when every resolver should agree, for example to catch a decommissioned
+node that is still in one zone. A resolver that times out or returns SERVFAIL is a WARN; NXDOMAIN just means
+no addresses. Queries go out over UDP (TCP when the answer is truncated), all resolvers in parallel, with no
+extra dependencies. `--resolver` and `--connect` are alternatives.
+
 ## What gets flagged
 
 | Finding | Level |
@@ -50,6 +74,8 @@ SNI and hostname verification use `shop.example.com`. Override with `--sni`.
 | Address unreachable (WARN with `--allow-unreachable`) | FAIL |
 | Fewer than `--warn-days` (7) days left, or less than `--warn-pct` (33%) of lifetime left | WARN |
 | Some nodes present an OCSP staple and others do not | WARN |
+| A `--resolver` timed out or failed | WARN |
+| An address only some `--resolver`s returned (with `--dns-divergence warn` / `fail`) | WARN / FAIL |
 
 The lifetime percentage matters for short-lived certs: a 6-day cert with 1.5 days left is at 25%, which
 should already have renewed.
