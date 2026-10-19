@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "certfan"
-version = "0.2.0"
+version = "0.3.0"
 description = "Probe every IP behind a TLS hostname and catch the node still serving an old, expiring or broken certificate."
 readme = "README.md"
 requires-python = ">=3.9"

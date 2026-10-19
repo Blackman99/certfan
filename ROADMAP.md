@@ -7,14 +7,17 @@
 ## v0.2 (shipped 2026-10-12)
 - Chain comparison (intermediate mismatch per node), OCSP-stapling presence per node
 - Targets file (`certfan check -f hosts.txt`) and per-target thresholds
-- Remaining for a later cut: multiple resolvers (`--resolver`), GitHub Action for scheduled checks
+- Remaining for a later cut: GitHub Action for scheduled checks
 
-## v0.3
+## v0.3 (shipped 2026-10-19)
+- Multiple resolvers (`--resolver 1.1.1.1 --resolver 8.8.8.8`): probe the union of every resolver's A/AAAA
+  answers to catch GeoDNS / split-horizon nodes; per-node resolver attribution, `--dns-divergence note|warn|fail`
+
+## v0.4
 - STARTTLS (SMTP/IMAP/Postgres), custom ALPN
 - `certfan watch`: loop mode with a tiny /metrics endpoint
 - Notifications via webhook on state change
 
 ## Later
 - CT-log check: "a new cert was issued N hours ago, but node X still serves the previous one"
-- Multiple resolvers (`--resolver 1.1.1.1 --resolver 8.8.8.8`) to catch GeoDNS / split-horizon divergence
 - GitHub Action for scheduled checks

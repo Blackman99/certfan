@@ -30,6 +30,7 @@ class NodeResult:
     ms: float = 0.0
     chain_fingerprints: list = field(default_factory=list)  # SHA-256 hex, leaf first
     ocsp_stapled: bool = False
+    resolvers: list = field(default_factory=list)  # which --resolver(s) returned this address
 
     @property
     def addr(self) -> str:
