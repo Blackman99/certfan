@@ -8,8 +8,10 @@ def parse_targets_file(path: str) -> list[Tuple[str, dict]]:
     """Return [(host[:port], overrides)] from a targets file.
 
     Format: one target per line (`host` or `host:port`). Blank lines and `#` comments
-    are ignored. Optional trailing `warn_days=N` / `warn_pct=N` tokens override globals.
+    are ignored. Optional trailing `warn_days=N` / `warn_pct=N` / `starttls=PROTO|none` /
+    `alpn=P1,P2` tokens override the command-line values for that line.
     """
+    from .starttls import PROTOCOLS
     out: list[Tuple[str, dict]] = []
     with open(path) as f:
         for lineno, raw in enumerate(f, 1):
@@ -35,7 +37,19 @@ def parse_targets_file(path: str) -> list[Tuple[str, dict]]:
                         overrides[key] = float(val)
                     except ValueError as e:
                         raise ValueError(f"{path}:{lineno}: invalid {key}={val!r}") from e
+                elif key == "starttls":
+                    val = val.lower()
+                    if val not in PROTOCOLS and val != "none":
+                        raise ValueError(f"{path}:{lineno}: invalid starttls={val!r} (want "
+                                         f"{', '.join(sorted(PROTOCOLS))} or none)")
+                    overrides[key] = val
+                elif key == "alpn":
+                    protos = [p for p in val.split(",") if p]
+                    if not protos:
+                        raise ValueError(f"{path}:{lineno}: empty alpn= (example: alpn=h2,http/1.1)")
+                    overrides[key] = protos
                 else:
-                    raise ValueError(f"{path}:{lineno}: unknown override {key!r} (want warn_days or warn_pct)")
+                    raise ValueError(f"{path}:{lineno}: unknown override {key!r} (want warn_days, "
+                                     f"warn_pct, starttls or alpn)")
             out.append((target, overrides))
     return out

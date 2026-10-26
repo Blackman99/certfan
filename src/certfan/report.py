@@ -5,13 +5,18 @@ import datetime as _dt
 import json
 from collections import Counter
 
+from .starttls import LABELS
+
 PASS, WARN, FAIL = "PASS", "WARN", "FAIL"
 RANK = {PASS: 0, WARN: 1, FAIL: 2}
 
 
 def evaluate(host, nodes, warn_days=7.0, warn_pct=33.0, now=None, allow_unreachable=False,
-             dns=None, dns_divergence="note"):
-    """dns: optional {"resolvers": [labels], "errors": {label: msg}} from --resolver."""
+             dns=None, dns_divergence="note", starttls="", alpn=None):
+    """dns: optional {"resolvers": [labels], "errors": {label: msg}} from --resolver.
+
+    starttls: protocol used to reach TLS (smtp/imap/pop3/postgres); alpn: protocols offered.
+    """
     now = now or _dt.datetime.now(_dt.timezone.utc)
     findings = []  # (level, ip or "*", message)
     dns_info = None
@@ -29,6 +34,11 @@ def evaluate(host, nodes, warn_days=7.0, warn_pct=33.0, now=None, allow_unreacha
                 findings.append((lvl, n.addr, f"not returned by resolver {missing} (DNS answers differ)"))
     good = [n for n in nodes if n.ok]
     for n in nodes:
+        if not n.ok and n.error_stage == "starttls":
+            # The node answered but would not upgrade: that is drift, not a network blip.
+            label = LABELS.get(n.starttls, "STARTTLS")
+            findings.append((FAIL, n.addr, f"{label} failed: {n.error}"))
+            continue
         if not n.ok:
             findings.append((WARN if allow_unreachable else FAIL, n.addr, f"unreachable: {n.error}"))
             continue
@@ -84,11 +94,24 @@ def evaluate(host, nodes, warn_days=7.0, warn_pct=33.0, now=None, allow_unreacha
     if stapled and unstapled:
         for n in unstapled:
             findings.append((WARN, n.addr, "OCSP staple missing (other nodes present a staple)"))
+    # ALPN: with --alpn, every node should pick the same protocol (e.g. one node lost h2)
+    if alpn:
+        picked = Counter(n.alpn or "" for n in good)
+        if len(picked) > 1:
+            top = picked.most_common()
+            ref = top[0][0]
+            if len(top) > 1 and top[1][1] == top[0][1]:  # tie: prefer the first offered protocol
+                ref = next((p for p in alpn if p in picked), ref)
+            for n in good:
+                if (n.alpn or "") != ref:
+                    findings.append((WARN, n.addr, f"negotiated ALPN {n.alpn or 'none'} while other "
+                                     f"nodes negotiate {ref or 'none'}"))
     if not nodes:
         findings.append((FAIL, "*", "hostname resolved to no addresses"))
     verdict = max((f[0] for f in findings), key=RANK.get, default=PASS)
     return {"host": host, "verdict": verdict, "distinct_certs": len(fps),
-            "nodes": nodes, "findings": findings, "checked_at": now, "dns": dns_info}
+            "nodes": nodes, "findings": findings, "checked_at": now, "dns": dns_info,
+            "starttls": starttls or "", "alpn": list(alpn) if alpn else []}
 
 
 def node_level(rep, ip):
@@ -107,7 +130,8 @@ def render_text(reps, color=False):
             k = len(dns["resolvers"])
             agree = "answers differ" if dns["divergent"] else "answers agree"
             via = f" from {k} resolver{'s' if k != 1 else ''} ({agree})"
-        out.append(c(f"{rep['host']}", "1") + f"  {len(rep['nodes'])} address(es){via}, "
+        over = f" over {LABELS[rep['starttls']]}" if rep.get("starttls") else ""
+        out.append(c(f"{rep['host']}", "1") + f"  {len(rep['nodes'])} address(es){via}{over}, "
                    f"{rep['distinct_certs']} distinct certificate(s)")
         fps = {}
         for n in rep["nodes"]:
@@ -116,10 +140,13 @@ def render_text(reps, color=False):
                 tag = fps.setdefault(n.fingerprint, chr(ord("A") + len(fps)))
                 chain_n = len(n.chain_fingerprints) or 1
                 ocsp = "ocsp" if n.ocsp_stapled else "no-ocsp"
+                alpn = f"  alpn:{n.alpn or '-'}" if rep.get("alpn") else ""
                 desc = (f"cert {tag}  serial {n.serial[:12]}  expires {n.not_after:%Y-%m-%d}  "
-                        f"{n.tls_version}  chain:{chain_n}  {ocsp}  {n.ms:.0f}ms")
+                        f"{n.tls_version}  chain:{chain_n}  {ocsp}{alpn}  {n.ms:.0f}ms")
             else:
                 desc = n.error
+            if n.starttls == "smtp" and n.banner[:4] in ("220 ", "220-") and n.banner[4:].split():
+                desc += "  as " + n.banner[4:].split()[0]  # the name the MTA greets with
             if dns and dns["divergent"] and n.resolvers:
                 desc += "  via " + ",".join(n.resolvers)
             out.append(f"  {c(lvl.ljust(4), col[lvl])}  {n.addr:<39} {desc}")
@@ -135,6 +162,8 @@ def to_json(reps):
         "host": r["host"], "verdict": r["verdict"], "distinct_certs": r["distinct_certs"],
         "checked_at": r["checked_at"].isoformat(),
         **({"dns": r["dns"]} if r.get("dns") else {}),
+        **({"starttls": r["starttls"]} if r.get("starttls") else {}),
+        **({"alpn_offered": r["alpn"]} if r.get("alpn") else {}),
         "nodes": [dict(n.to_dict(), status=node_level(r, n.addr)) for n in r["nodes"]],
         "findings": [{"level": a, "ip": b, "message": m} for a, b, m in r["findings"]],
     } for r in reps], indent=2)
@@ -151,6 +180,9 @@ def to_prom(reps):
              "# TYPE certfan_node_chain_len gauge",
              "# HELP certfan_dns_divergent 1 if the --resolver answers for this host differ.",
              "# TYPE certfan_dns_divergent gauge",
+             "# HELP certfan_node_alpn_info Always 1; the alpn label is the protocol the node selected "
+             "(only with --alpn; \"\" = none).",
+             "# TYPE certfan_node_alpn_info gauge",
              "# HELP certfan_distinct_certs Distinct certificates served across all addresses.",
              "# TYPE certfan_distinct_certs gauge"]
     for r in reps:
@@ -161,6 +193,8 @@ def to_prom(reps):
                 lines.append(f"certfan_node_cert_expiry_seconds{{{lab}}} {int(n.not_after.timestamp())}")
                 lines.append(f"certfan_node_ocsp_stapled{{{lab}}} {1 if n.ocsp_stapled else 0}")
                 lines.append(f"certfan_node_chain_len{{{lab}}} {len(n.chain_fingerprints) or 1}")
+                if r.get("alpn"):
+                    lines.append(f'certfan_node_alpn_info{{{lab},alpn="{n.alpn or ""}"}} 1')
             lines.append(f"certfan_node_status{{{lab}}} {RANK[node_level(r, n.addr)]}")
         lines.append(f'certfan_distinct_certs{{host="{h}"}} {r["distinct_certs"]}')
         if r.get("dns"):

@@ -87,6 +87,24 @@ svg text{font-family:var(--mono);fill:var(--bone)}
 /* fig 3 */
 #lanes{aspect-ratio:1000/300}
 
+/* fig 4: STARTTLS ladder */
+.new{font:500 11px/1 var(--mono);color:var(--lime);border:1px solid var(--lime);padding:2px 4px 1px;margin-left:6px;vertical-align:2px;white-space:nowrap}
+.seg{display:flex;flex-wrap:wrap;margin:18px 0 0;border-left:1px solid var(--graphite)}
+.seg+.seg{margin-top:10px}
+.seg button{border:0;border-bottom:1px solid transparent;padding:8px 10px 7px;font-size:13px;color:var(--dim)}
+.seg button:hover{color:var(--bone);border-bottom-color:var(--graphite)}
+.seg button[aria-pressed="true"]{color:var(--lime);border-bottom-color:var(--lime)}
+.seg.two button[data-n="bad"][aria-pressed="true"]{color:var(--pink);border-bottom-color:var(--pink)}
+.cap .note{margin-top:20px;font-size:13px;color:var(--dim)}
+.cap .note code{overflow-wrap:anywhere}
+.cmdline{margin:0 0 8px;font-size:14px;color:var(--bone);min-height:1.5em;overflow-x:auto;white-space:nowrap}
+.cmdline .dim{margin-right:.6em}
+#ladder svg{display:block;width:100%;height:auto;overflow:visible}
+#fig4 .verdict{margin:6px 0 0;min-height:3em;max-width:none}
+#fig4 .verdict.fail{color:var(--bone)}
+#fig4 .verdict b{font-weight:500}
+#fig4 .verdict .ok{color:var(--lime)}#fig4 .verdict .bad{color:var(--pink)}
+
 /* table 1 */
 .out{margin:0;padding:22px 0;border-top:1px solid var(--graphite);border-bottom:1px solid var(--graphite);font-size:14px;line-height:1.7;overflow-x:auto;white-space:pre}
 .install{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));column-gap:var(--gut);margin-top:36px}
@@ -134,6 +152,8 @@ footer .colo{grid-column:8/13;justify-self:end;font-size:13px}
   .matrix thead th{font-size:10px;letter-spacing:.04em}
   .matrix{font-size:15px}
   .out{font-size:11.5px}
+  .cmdline{font-size:12px}
+  .seg button{padding:8px 8px 7px}
   .install{grid-template-columns:1fr}
   .install .lbl,.cmd,.try{grid-column:1/2}
   .install .lbl{margin-bottom:10px}
