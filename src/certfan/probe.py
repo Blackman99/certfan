@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .der import parse_cert
+from .starttls import NAMES, STARTTLS_PORTS, StartTLSError, upgrade
 
 
 @dataclass
@@ -31,6 +32,10 @@ class NodeResult:
     chain_fingerprints: list = field(default_factory=list)  # SHA-256 hex, leaf first
     ocsp_stapled: bool = False
     resolvers: list = field(default_factory=list)  # which --resolver(s) returned this address
+    starttls: str = ""  # smtp / imap / pop3 / postgres when the TLS session was reached via STARTTLS
+    banner: str = ""  # first line of the plaintext greeting (STARTTLS only): often names the node
+    alpn: Optional[str] = None  # ALPN protocol the node selected (None: not offered or none chosen)
+    error_stage: str = ""  # "starttls" when the server answered but would not upgrade
 
     @property
     def addr(self) -> str:
@@ -95,49 +100,92 @@ def _peer_chain_ders(sock, leaf_der: Optional[bytes]) -> list[bytes]:
     return [leaf_der] if leaf_der else []
 
 
-def _handshake(ip: str, port: int, sni: str, timeout: float, ctx: ssl.SSLContext):
+def _handshake(ip: str, port: int, sni: str, timeout: float, ctx: ssl.SSLContext,
+               starttls: str = "", box: Optional[dict] = None):
     fam = socket.AF_INET6 if ":" in ip else socket.AF_INET
     with socket.socket(fam, socket.SOCK_STREAM) as raw:
         raw.settimeout(timeout)
         raw.connect((ip, port))
+        if starttls:
+            banner = upgrade(raw, starttls)
+            if box is not None:
+                box["banner"] = banner
         with ctx.wrap_socket(raw, server_hostname=sni) as s:
             der = s.getpeercert(binary_form=True)
             version = s.version()
             chain = _peer_chain_ders(s, der)
             ocsp = getattr(s, "ocsp_response", None)
+            if box is not None:
+                box["alpn"] = s.selected_alpn_protocol()
             return der, version, chain, bool(ocsp)
 
 
+def _fmt_error(e: BaseException, port: int, starttls: str, alpn) -> str:
+    msg = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+    if isinstance(e, ssl.SSLError):
+        text = str(e).upper()
+        if alpn and "NO_APPLICATION_PROTOCOL" in text:
+            return f"server accepted none of the offered ALPN protocols ({','.join(alpn)}): {msg}"
+        if not starttls and port in STARTTLS_PORTS and ("WRONG_VERSION" in text or "RECORD" in text
+                                                         or "UNEXPECTED_EOF" in text):
+            proto = STARTTLS_PORTS[port]
+            return f"{msg} (port {port} usually speaks {NAMES[proto]}: try --starttls {proto})"
+    return msg
+
+
+def _context(verify: bool, cafile: Optional[str], alpn) -> ssl.SSLContext:
+    if verify:
+        ctx = ssl.create_default_context(cafile=cafile)
+    else:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    if alpn:
+        ctx.set_alpn_protocols(list(alpn))
+    return ctx
+
+
 def probe(ip: str, port: int, sni: str, timeout: float = 5.0,
-          cafile: Optional[str] = None, verify: bool = True) -> NodeResult:
-    r = NodeResult(ip=ip, port=port)
+          cafile: Optional[str] = None, verify: bool = True,
+          starttls: str = "", alpn=None) -> NodeResult:
+    """Handshake one address. starttls: smtp|imap|pop3|postgres; alpn: protocols to offer."""
+    r = NodeResult(ip=ip, port=port, starttls=starttls or "")
     t0 = time.perf_counter()
     der = None
     chain_ders: list[bytes] = []
     ocsp = False
+    box: dict = {}
+
+    def fail(e, stage=""):
+        r.error = str(e) if stage else _fmt_error(e, port, starttls, alpn)
+        r.error_stage = stage
+        r.banner = getattr(e, "banner", "") or box.get("banner", "")
+        r.ms = (time.perf_counter() - t0) * 1000
+        return r
+
     if verify:
-        ctx = ssl.create_default_context(cafile=cafile)
         try:
-            der, r.tls_version, chain_ders, ocsp = _handshake(ip, port, sni, timeout, ctx)
+            der, r.tls_version, chain_ders, ocsp = _handshake(
+                ip, port, sni, timeout, _context(True, cafile, alpn), starttls, box)
+        except StartTLSError as e:
+            return fail(e, "starttls")
         except ssl.SSLCertVerificationError as e:
             r.verify_error = e.verify_message or str(e)
         except ssl.SSLError as e:
             r.verify_error = str(e)
         except OSError as e:
-            r.error = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
-            r.ms = (time.perf_counter() - t0) * 1000
-            return r
+            return fail(e)
     if der is None:
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
         try:
-            der, r.tls_version, chain_ders, ocsp = _handshake(ip, port, sni, timeout, ctx)
+            der, r.tls_version, chain_ders, ocsp = _handshake(
+                ip, port, sni, timeout, _context(False, cafile, alpn), starttls, box)
+        except StartTLSError as e:
+            return fail(e, "starttls")
         except OSError as e:
-            r.error = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
-            r.ms = (time.perf_counter() - t0) * 1000
-            return r
+            return fail(e)
     r.ms = (time.perf_counter() - t0) * 1000
+    r.banner = box.get("banner", "")
+    r.alpn = box.get("alpn")
     r.fingerprint = hashlib.sha256(der).hexdigest()
     if not chain_ders:
         chain_ders = [der]

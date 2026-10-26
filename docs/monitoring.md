@@ -18,7 +18,19 @@ Metrics:
 - `certfan_node_status{host,ip,serial}`: 0 pass, 1 warn, 2 fail
 - `certfan_node_ocsp_stapled{host,ip,serial}`: 1 if the handshake returned an OCSP staple
 - `certfan_node_chain_len{host,ip,serial}`: certificates in the presented chain (leaf first)
+- `certfan_node_alpn_info{host,ip,serial,alpn}`: with `--alpn`, always 1; the label is the selected protocol
 - `certfan_distinct_certs{host}`: should be 1
+
+Mail and database targets go in the same targets file:
+
+```text
+# /etc/certfan/hosts.txt
+shop.example.com           alpn=h2,http/1.1
+mx.example.com             starttls=smtp
+mail.example.com:587       starttls=smtp
+mail.example.com:993       # implicit TLS: no starttls
+db.internal                starttls=postgres warn_days=14
+```
 
 Example alert:
 
@@ -39,4 +51,5 @@ Example alert:
 
 `--format json` prints a list with one object per target: `host`, `verdict`, `distinct_certs`, `checked_at`,
 `nodes[]` (ip, port, fingerprint, serial, subject_cn, issuer_cn, sans, not_before, not_after, tls_version, ms,
-chain_fingerprints, ocsp_stapled, verify_error, error, status) and `findings[]` (level, ip, message).
+chain_fingerprints, ocsp_stapled, verify_error, error, status, starttls, banner, alpn, error_stage) and
+`findings[]` (level, ip, message). Hosts checked with `--starttls` add `starttls`; with `--alpn`, `alpn_offered`.

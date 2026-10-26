@@ -73,6 +73,8 @@
         <tr><th scope="row">Fingerprints compared across nodes</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">the odd one out fails, named by address</td></tr>
         <tr><th scope="row">Expiry warning</th><td><i class="m part" role="img" aria-label="for the address it saw"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">last days, or last third of the certificate’s lifetime, on every node</td></tr>
         <tr><th scope="row">Presented chain compared (intermediates)</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">FAIL when intermediates differ across nodes that share the same leaf; OCSP staple presence noted</td></tr>
+        <tr><th scope="row">Mail and database nodes <span class="new">v0.4.0</span></th><td><i class="m part" role="img" aria-label="one address only"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how"><code>--starttls smtp|imap|pop3|postgres</code> on every MX or replica; a node that stopped offering STARTTLS fails on its own (Fig.&nbsp;4)</td></tr>
+        <tr><th scope="row">Same ALPN on every node <span class="new">v0.4.0</span></th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how"><code>--alpn h2,http/1.1</code> warns when one node quietly stopped negotiating h2</td></tr>
         <tr><th scope="row">Targets file with per-host thresholds</th><td><i class="m no" role="img" aria-label="no"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how"><code>certfan check -f hosts.txt</code> with optional <code>warn_days=N</code> / <code>warn_pct=N</code></td></tr>
         <tr><th scope="row">Machine-readable result</th><td><i class="m part" role="img" aria-label="varies"></i></td><td><i class="m yes" role="img" aria-label="yes"></i></td><td class="how">exit 0 / 1 / 2, <code>--format json</code>, <code>--format prom</code>, <code>--prom-file</code></td></tr>
       </tbody>
@@ -88,6 +90,26 @@
     <p>The one-IP probe (ticks on .10) stays green throughout. certfan’s daily run (ticks across all lanes) flags .12 from day 3.</p>
   </figcaption>
   <div class="plot" id="lanes" role="img" aria-label="Lane chart: three nodes switch to the new certificate on day 3, node .12 keeps the old one and breaks at day 47; certfan flags it from day 3."></div>
+</figure>
+
+<figure class="plate g" id="fig4" aria-labelledby="f4c">
+  <figcaption class="cap">
+    <p class="fn"><span>Fig.</span>&nbsp;4</p>
+    <h2 id="f4c">Before the handshake</h2>
+    <p>Mail servers and databases only start TLS after a few lines of plaintext. With <code>--starttls</code> certfan speaks exactly enough of each protocol to ask for it, on every node, then compares certificates as in Fig.&nbsp;1. No login, no <code>MAIL FROM</code>, no query.</p>
+    <div class="seg" role="group" aria-label="Protocol" id="f4proto">
+      <button type="button" data-p="https">HTTPS</button><button type="button" data-p="smtp" aria-pressed="true">SMTP</button><button type="button" data-p="imap">IMAP</button><button type="button" data-p="pop3">POP3</button><button type="button" data-p="postgres">PostgreSQL</button>
+    </div>
+    <div class="seg two" role="group" aria-label="Node" id="f4node">
+      <button type="button" data-n="ok" aria-pressed="true">healthy node</button><button type="button" data-n="bad">broken node</button>
+    </div>
+    <p class="note">New in v0.4.0: until that release is tagged, <code>pipx install "git+https://<wbr>github.com/<wbr>Blackman99/<wbr>certfan"</code> installs it from <code>main</code>.</p>
+  </figcaption>
+  <div class="plot">
+    <p class="cmdline mono" id="f4cmd"></p>
+    <div id="ladder" role="img" aria-label="Sequence diagram of the plaintext exchange certfan performs before the TLS handshake, for the selected protocol."></div>
+    <p class="verdict" id="f4out" aria-live="polite"></p>
+  </div>
 </figure>
 
 <section class="plate g" aria-labelledby="t1c">

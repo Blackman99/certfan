@@ -61,7 +61,13 @@ at top-left, so certfan no longer has a display headline. **Fig. 1 is the first 
   has caption + data in a margin column (cols 1–3) and plot in cols 4–12, framed only by graphite corner ticks.
   On ≤ 760 px everything stacks to one column; the fan rotates to fan downward and still fills the first screen,
   caption directly under it.
-- Fig. 2 comparison matrix · Fig. 3 lane plot (50 days of a renewal) · Table 1 sample output + install.
+- Fig. 2 comparison matrix · Fig. 3 lane plot (50 days of a renewal) · Fig. 4 STARTTLS ladder (v0.4.0) ·
+  Table 1 sample output + install.
+- Fig. 4 is a sequence diagram (certfan and node lifelines, graphite) of the plaintext exchange before the
+  handshake. Protocol and node buttons are flat segmented controls (lime underline = pressed, pink for
+  "broken node"). Plaintext and TLS phases get margin brackets (bone / lime); a line the server should have sent
+  but did not is a pink dashed slot; a healthy run ends in the Fig. 1 fingerprint glyph, a broken one in a pink ×
+  with dashed lifelines. The command and the real certfan output line sit above and below the plot.
 
 ## Motion (precise, rhythmic, no bounce; linear / ease-out only)
 1. Resolve: the fan's hairlines draw out from the hostname point (stroke-dashoffset), 90 ms stagger.
@@ -70,6 +76,8 @@ at top-left, so certfan no longer has a display headline. **Fig. 1 is the first 
 3. Compare: consistent rays and glyphs turn acid lime together; the mismatched ray turns hot pink, breaks
    at its midpoint and its outer half + glyph slide out of register by a fixed offset.
 4. Fig. 3 lanes draw left→right when scrolled into view.
+5. Fig. 4 rows draw in protocol order (arrow first, then its words), the glyph builds spoke by spoke, then the
+   verdict line appears; it replays on every protocol or node switch.
 `prefers-reduced-motion: reduce` renders the final compared state immediately, no transitions.
 
 ## Logo

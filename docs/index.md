@@ -11,9 +11,10 @@ stay green.
 certfan:
 
 1. resolves **all** A/AAAA records (or takes explicit backends with `--connect`, or a `-f` targets file),
-2. performs a TLS handshake with SNI on **each** address and verifies chain + hostname,
+2. performs a TLS handshake with SNI on **each** address (after an SMTP / IMAP / POP3 / PostgreSQL
+   STARTTLS preamble with `--starttls`) and verifies chain + hostname,
 3. compares leaf fingerprints and the presented intermediate chain across nodes,
-4. notes OCSP stapling presence per node,
+4. notes OCSP stapling presence per node, and with `--alpn` which protocol each node selects,
 5. warns when a cert has fewer than N days or less than N% of its lifetime left (per-target overrides in `-f`),
 6. exits `0`/`1`/`2` and can emit JSON or Prometheus textfile metrics.
 

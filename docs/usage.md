@@ -62,6 +62,47 @@ node that is still in one zone. A resolver that times out or returns SERVFAIL is
 no addresses. Queries go out over UDP (TCP when the answer is truncated), all resolvers in parallel, with no
 extra dependencies. `--resolver` and `--connect` are alternatives.
 
+## Mail servers and databases (STARTTLS)
+
+Behind `mx.example.com` there are usually several MTAs, and behind `db.internal` a primary and replicas. They
+renew too, and they forget to reload too. With `--starttls` certfan says hello in plaintext first, asks for TLS,
+and then compares certificates exactly as it does for HTTPS:
+
+```bash
+certfan check mx.example.com --starttls smtp          # EHLO, STARTTLS        (port 25)
+certfan check mail.example.com --starttls imap        # CAPABILITY, STARTTLS  (port 143)
+certfan check mail.example.com --starttls pop3        # CAPA, STLS            (port 110)
+certfan check db.internal --starttls postgres --cafile corp-root.pem   # SSLRequest (port 5432)
+```
+
+```
+mx.example.com:25  4 address(es) over SMTP STARTTLS, 2 distinct certificate(s)
+  PASS  192.0.2.21   cert A  serial 51fe63574478  expires 2026-11-20  TLSv1.3  chain:2  no-ocsp  38ms  as mx1.example.com
+  PASS  192.0.2.22   cert A  serial 51fe63574478  expires 2026-11-20  TLSv1.3  chain:2  no-ocsp  41ms  as mx2.example.com
+  FAIL  192.0.2.23   cert B  serial 61c4ec55df4c  expires 2026-10-12  TLSv1.3  chain:2  no-ocsp  44ms  as mx3.example.com
+  FAIL  192.0.2.24   server does not advertise STARTTLS (EHLO offered: PIPELINING SIZE 8BITMIME)  as mx4.example.com
+    - 192.0.2.24: SMTP STARTTLS failed: server does not advertise STARTTLS (EHLO offered: PIPELINING SIZE 8BITMIME)
+    - 192.0.2.23: serves a different certificate (serial 61c4ec55df4cf8bb, issued 2026-08-13) than the other nodes
+  verdict: FAIL
+```
+
+A node that never advertises STARTTLS, refuses it, or stalls before TLS starts is a FAIL that names the stage, so
+a mail relay that quietly fell back to plaintext cannot hide behind `--allow-unreachable`. If a server sends extra
+plaintext right after its go-ahead (the STARTTLS response-injection bug class), certfan refuses to start TLS on
+that stream. Ports 465 / 993 / 995 already speak TLS directly: check those *without* `--starttls`. Point plain
+certfan at port 25 or 5432 by mistake and the error tells you which `--starttls` to add.
+`certfan demo --starttls smtp` shows all of this on four local nodes.
+
+## ALPN
+
+`--alpn h2,http/1.1` offers those protocols in the handshake. When nodes select different ones (one replica
+rebuilt without HTTP/2, a proxy that lost its h2 config), the odd ones out are a WARN:
+
+```
+  WARN  203.0.113.12   cert A  serial 51fe63574478  expires 2026-11-20  TLSv1.3  chain:2  ocsp  alpn:http/1.1  44ms
+    - 203.0.113.12: negotiated ALPN http/1.1 while other nodes negotiate h2
+```
+
 ## What gets flagged
 
 | Finding | Level |
@@ -72,9 +113,11 @@ extra dependencies. `--resolver` and `--connect` are alternatives.
 | Chain or hostname verification fails | FAIL |
 | Certificate expired | FAIL |
 | Address unreachable (WARN with `--allow-unreachable`) | FAIL |
+| With `--starttls`: STARTTLS not advertised, refused, or plaintext sent after the go-ahead | FAIL |
 | Fewer than `--warn-days` (7) days left, or less than `--warn-pct` (33%) of lifetime left | WARN |
 | Some nodes present an OCSP staple and others do not | WARN |
 | A `--resolver` timed out or failed | WARN |
+| With `--alpn`: a node selects a different ALPN protocol from the others | WARN |
 | An address only some `--resolver`s returned (with `--dns-divergence warn` / `fail`) | WARN / FAIL |
 
 The lifetime percentage matters for short-lived certs: a 6-day cert with 1.5 days left is at 25%, which

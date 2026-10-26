@@ -11,7 +11,14 @@ resolver plus your internal one) and certfan probes every address any of them re
 the resolvers that handed it out. Note that `--resolver` changes *which addresses* you learn about, not where the
 TLS handshake comes from; for anycast you still need more than one vantage point.
 
-**Does it send HTTP?** No. TLS handshake only, then close.
+**Does it send HTTP?** No. TLS handshake only, then close. With `--starttls` it sends just enough plaintext to
+ask for TLS (an `EHLO` with an address literal, `CAPABILITY`, `CAPA`, or the 8-byte PostgreSQL SSLRequest),
+never a login, `MAIL FROM` or query.
+
+**Mail on 465 / 993 / 995?** Those ports speak TLS from the first byte, so check them as usual without
+`--starttls` (`certfan check mail.example.com:993`). certfan refuses `--starttls` there instead of timing out.
+
+**MySQL, LDAP, XMPP, FTP?** Not yet. Open an issue with the server you run; the preamble code is small.
 
 **Why no `cryptography` dependency?** certfan parses the few X.509 fields it needs with a tiny DER reader so
 it installs anywhere, including minimal containers.
